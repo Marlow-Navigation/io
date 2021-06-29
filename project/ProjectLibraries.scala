@@ -28,7 +28,8 @@ object ProjectLibraries {
       Slf4jApi,
       Slf4jSimple,
       BcpkixJdk15on,
-      BcprovJdk15on
+      BcprovJdk15on,
+      PureConfig
     ) ++ testkit
   }
 
@@ -43,12 +44,14 @@ object ProjectLibraries {
     val ItextpdfForms = "com.itextpdf" % "forms" % ItextpdfFormsVersion
     val ItextpdfSvg = "com.itextpdf" % "svg" % ItextpdfSvgVersion
     val JacksonCore = "com.fasterxml.jackson.core" % "jackson-core" % JacksonCoreVersion
-    val JacksonAnnotations = "com.fasterxml.jackson.core" % "jackson-annotations" % JacksonAnnotationsVersion
+    val JacksonAnnotations =
+      "com.fasterxml.jackson.core" % "jackson-annotations" % JacksonAnnotationsVersion
     val JacksonDatabind = "com.fasterxml.jackson.core" % "jackson-databind" % JacksonDatabindVersion
     val Slf4jApi = "org.slf4j" % "slf4j-api" % Slf4jApiVersion
     val Slf4jSimple = "org.slf4j" % "slf4j-simple" % Slf4jSimpleVersion
     val BcpkixJdk15on = "org.bouncycastle" % "bcpkix-jdk15on" % BcpkixJdk15onVersion
     val BcprovJdk15on = "org.bouncycastle" % "bcprov-jdk15on" % BcprovJdk15onVersion
+    val PureConfig = "com.github.pureconfig" %% "pureconfig" % PureConfigVersion
   }
 
   object TestLibraries {

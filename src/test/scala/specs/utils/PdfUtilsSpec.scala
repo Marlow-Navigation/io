@@ -1,15 +1,14 @@
-package specs.pdf
+package specs.utils
 
-import com.marlow.io.pdf.PdfUtils
+import com.marlow.io.utils.PdfUtils
 import org.specs2.mutable.Specification
 
-import java.awt.Desktop
 import java.io.File
 import java.nio.file.{Files, Paths}
 import scala.io.Source
 
 class PdfUtilsSpec extends Specification {
-  val dest = "./src/test/resources/test.pdf"
+  val dest = "./src/test/resources/test3.pdf"
   val source: Source = Source.fromFile("src/test/resources/test.json")
   try {
     val json = source.getLines().mkString
@@ -27,10 +26,6 @@ class PdfUtilsSpec extends Specification {
       Files.exists(Paths.get(dest)) mustEqual true
       new File(dest).length() mustEqual 6154
     }
-  }
-
-  if (Desktop.isDesktopSupported) {
-    Desktop.getDesktop.open(new File(dest))
   }
 
 }
