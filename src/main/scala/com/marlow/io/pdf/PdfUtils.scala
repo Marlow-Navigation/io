@@ -269,7 +269,7 @@ object PdfUtils extends Loggie {
     }
   }
 
-  def addHeaderFooter(jn: JsonNode, event: Event, headerFlag: Boolean): Unit = {
+  private def addHeaderFooter(jn: JsonNode, event: Event, headerFlag: Boolean): Unit = {
     val font = PdfFontFactory.createFont(jn.get(KEY_FONT).textValue)
     val docEvent = event.asInstanceOf[PdfDocumentEvent]
     val pdf = docEvent.getDocument
@@ -299,13 +299,13 @@ object PdfUtils extends Loggie {
     )
   }
 
-  case class Header(jn: JsonNode) extends IEventHandler {
+  private case class Header(jn: JsonNode) extends IEventHandler {
     override def handleEvent(event: Event): Unit = {
       PdfUtils.addHeaderFooter(jn, event, true)
     }
   }
 
-  case class Footer(jn: JsonNode) extends IEventHandler {
+  private case class Footer(jn: JsonNode) extends IEventHandler {
     override def handleEvent(event: Event): Unit = {
       PdfUtils.addHeaderFooter(jn, event, false)
     }
