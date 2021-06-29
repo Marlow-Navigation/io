@@ -30,6 +30,8 @@ object PdfUtils extends Loggie {
   private val DEFAULT_MARGIN_BOTTOM: Float = 36
   private val DEFAULT_MARGIN_LEFT: Float = 36
   private val DEFAULT_MARGIN_RIGHT: Float = 36
+  private val DEFAULT_ROWSPAN: Int = 0
+  private val DEFAULT_COLSPAN: Int = 0
   private val KEY_PAGESIZE: String = "pageSize"
   private val KEY_FONT: String = "font"
   private val KEY_FONT_BOLD: String = "fontBold"
@@ -239,8 +241,8 @@ object PdfUtils extends Loggie {
       fontBold: PdfFont,
       fontSize: Float
   ): Unit = {
-    val rowspan = jnIntValue(jn, "rowspan")
-    val colspan = jnIntValue(jn, "colspan")
+    val rowspan = jnIntValue(jn, "rowspan", DEFAULT_ROWSPAN)
+    val colspan = jnIntValue(jn, "colspan", DEFAULT_COLSPAN)
     val headerCell = jnBooleanValue(jn, KEY_HEADER)
     val c = new Cell(rowspan, colspan)
     if (jnIntValue(jnTable, "border") == 0) {

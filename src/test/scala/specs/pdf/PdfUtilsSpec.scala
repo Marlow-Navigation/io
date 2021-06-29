@@ -9,7 +9,10 @@ import java.nio.file.{Files, Paths}
 import scala.io.Source
 
 class PdfUtilsSpec extends Specification {
-  val dest = "./src/test/resources/test.pdf"
+  val tempFile: File = File.createTempFile("itext-pdf-", ".pdf")
+  tempFile.deleteOnExit()
+
+  val dest: String = tempFile.getPath
   val source: Source = Source.fromFile("src/test/resources/test.json")
   try {
     val json = source.getLines().mkString
@@ -32,5 +35,4 @@ class PdfUtilsSpec extends Specification {
   if (Desktop.isDesktopSupported) {
     Desktop.getDesktop.open(new File(dest))
   }
-
 }
