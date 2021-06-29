@@ -8,7 +8,7 @@ import java.nio.file.{Files, Paths}
 import scala.io.Source
 
 class PdfUtilsSpec extends Specification {
-  val dest = "./src/test/resources/test3.pdf"
+  val dest = "./src/test/resources/test.pdf"
   val source: Source = Source.fromFile("src/test/resources/test.json")
   try {
     val json = source.getLines().mkString
