@@ -145,7 +145,7 @@ object PdfUtils extends Loggie {
             try {
               docFinal.close()
             } catch {
-              case e: Exception => throw e
+              case e: Exception =>
             }
           }
         }
@@ -153,7 +153,7 @@ object PdfUtils extends Loggie {
         try {
           pdfDocFinal.close()
         } catch {
-          case e: Exception => throw e
+          case e: Exception =>
         }
       }
     } catch {
