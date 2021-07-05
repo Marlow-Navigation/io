@@ -18,4 +18,5 @@ object ProjectLibraryVersions {
   val BcpkixJdk15onVersion = "1.68"
   val BcprovJdk15onVersion = "1.68"
   val PureConfigVersion = "0.16.0"
+  val RandomDataGenerationVersion = "2.9"
 }
