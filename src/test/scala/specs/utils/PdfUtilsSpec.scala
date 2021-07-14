@@ -81,7 +81,7 @@ class PdfUtilsSpec extends Specification {
       PdfUtils.generate(pdfReportPerson)
       val file = new File(destination)
       file.exists() mustEqual true
-      file.length() mustEqual 15882
+      file.length() mustEqual 16103
     }
   }
 }
