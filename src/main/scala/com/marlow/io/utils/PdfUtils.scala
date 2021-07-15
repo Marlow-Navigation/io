@@ -58,9 +58,7 @@ object PdfUtils extends Loggie {
           cell.add(element.asInstanceOf[IBlockElement])
         })
     } else {
-      cell.setNextRenderer(
-        new FitCellRenderer(cell, cellDetails.text)
-      )
+      cell.add(new Paragraph(cellDetails.text))
     }
     if (headerCell) {
       table.addHeaderCell(cell)

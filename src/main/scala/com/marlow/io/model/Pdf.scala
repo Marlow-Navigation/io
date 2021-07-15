@@ -204,9 +204,9 @@ object PdfReport {
   ): PdfReport = {
     val pageProperties = PageProperties(
       pageSize = PageSize.A4,
-      orientation = Landscape,
+      orientation = Portrait,
       pageNumbers = true,
-      pageNumbersFontSize = 10,
+      pageNumbersFontSize = 8,
       font = PdfFontFactory.createFont("Helvetica"),
       fontBold = PdfFontFactory.createFont("Helvetica-Bold"),
       fontSize = 8,

@@ -23,7 +23,6 @@ object ProjectLibraries {
       ItextpdfForms,
       ItextpdfSvg,
       PureConfig,
-      RandomDataGeneration,
       Slf4jApi,
       Slf4jSimple
     ) ++ testkit
@@ -48,8 +47,6 @@ object ProjectLibraries {
     val BcpkixJdk15on = "org.bouncycastle" % "bcpkix-jdk15on" % BcpkixJdk15onVersion
     val BcprovJdk15on = "org.bouncycastle" % "bcprov-jdk15on" % BcprovJdk15onVersion
     val PureConfig = "com.github.pureconfig" %% "pureconfig" % PureConfigVersion
-    val RandomDataGeneration =
-      "com.danielasfregola" %% "random-data-generator" % RandomDataGenerationVersion
   }
 
   object TestLibraries {

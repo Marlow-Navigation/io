@@ -6,14 +6,17 @@ import com.marlow.io.model._
 import com.marlow.io.utils.PdfUtils
 import org.specs2.mutable.Specification
 
-import java.nio.file.{Files, Paths}
+import java.io.File
 import java.util.UUID
 
-class PdfUtilsSpec extends Specification with DataGen {
+class PdfUtilsSpec extends Specification {
   val destination = s"./src/test/resources/mn-pdf-${UUID.randomUUID().toString}.pdf"
   val header: Header = Header(
     text =
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\nDuis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\nExcepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n" +
+        "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n" +
+        "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n" +
+        "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
     textRepeat = true,
     font = PdfFontFactory.createFont("Helvetica"),
     fontSize = 7,
@@ -22,7 +25,10 @@ class PdfUtilsSpec extends Specification with DataGen {
 
   val footer: Footer = Footer(
     text =
-      "<b>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.<br />Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.<br />Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.<br />Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</b>",
+      "<b>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.<br />" +
+        "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.<br />" +
+        "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.<br />" +
+        "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</b>",
     textRepeat = true,
     font = PdfFontFactory.createFont("Helvetica"),
     fontSize = 7,
@@ -66,14 +72,16 @@ class PdfUtilsSpec extends Specification with DataGen {
         "ID"
       )
     }
-    "generate a pdf report from random data" in {
-      val personList: Seq[Person] = random[Person](150).toList
+    "generate a pdf report from data" in {
+      val personList: Seq[Person] = DataGen.gen(11)
       val pdfReportPerson =
         PdfReport(personList, destination, header.text, footer.text)
           .withFooter(footer.text, true)
           .withHeader(header.text)
       PdfUtils.generate(pdfReportPerson)
-      Files.exists(Paths.get(destination)) mustEqual true
+      val file = new File(destination)
+      file.exists() mustEqual true
+      file.length() mustEqual 16103
     }
   }
 }
