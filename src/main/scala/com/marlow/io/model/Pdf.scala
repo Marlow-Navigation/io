@@ -128,7 +128,7 @@ case class TableDetails(
     keepTogether: Boolean,
     keepWithNext: Boolean,
     columns: Seq[ColumnDetails],
-    cells: Seq[RowDetails]
+    cells: Seq[CellProperties]
 )
 
 sealed trait CellType
@@ -175,13 +175,13 @@ case class ColumnDetails(
   override def cellType: CellType = CellHeader
 }
 
-case object RowDetails {
-  def apply(text: String): RowDetails = RowDetails(text = text, html = false)
+case object CellProperties {
+  def apply(text: String): CellProperties = CellProperties(text = text, html = false)
 }
 
 case class CellRaw(name: String, value: String)
 
-case class RowDetails(
+case class CellProperties(
     text: String,
     alignment: TextAlignment = TextAlignment.LEFT,
     htmlAlignment: HtmlTextAlignment = Justify,
@@ -213,7 +213,7 @@ object PdfReport {
       alignment = TextAlignment.JUSTIFIED
     )
     val columnDetails: Seq[ColumnDetails] = PdfUtils.extractColumns[T]()
-    val cellDetails: Seq[RowDetails] = PdfUtils.extractCells(ds)
+    val cellDetails: Seq[CellProperties] = PdfUtils.extractCells(ds)
     val tableDetails: TableDetails = TableDetails(
       border = 0,
       keepTogether = false,
@@ -243,4 +243,25 @@ case class PdfReport(
 
   def withHeader(text: String, html: Boolean = false): PdfReport =
     this.copy(header = Some(Header(text).copy(html = html)))
+
+  def withCellsAlignment(
+      alignment: TextAlignment = TextAlignment.LEFT,
+      htmlAlignment: HtmlTextAlignment = Justify
+  ): PdfReport =
+    this.copy(
+      details = this.details.map(td =>
+        td.copy(
+          columns = td.columns
+            .map(cd =>
+              cd.copy(alignment = alignment)
+                .copy(htmlAlignment = htmlAlignment)
+            ),
+          cells = td.cells
+            .map(cp =>
+              cp.copy(alignment = alignment)
+                .copy(htmlAlignment = htmlAlignment)
+            )
+        )
+      )
+    )
 }
