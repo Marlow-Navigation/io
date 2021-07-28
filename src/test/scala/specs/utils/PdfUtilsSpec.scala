@@ -45,7 +45,7 @@ class PdfUtilsSpec extends Specification {
         120190
       )
       PdfUtils.extractCells(Seq(person), Seq("id", "name")) mustEqual List(
-        RowDetails(
+        CellProperties(
           "M",
           TextAlignment.LEFT,
           Justify,
@@ -53,10 +53,17 @@ class PdfUtilsSpec extends Specification {
           0,
           0
         ),
-        RowDetails("480d1460-3380-4e89-9c95-ac9190f5749f", TextAlignment.LEFT, Justify, false, 0, 0)
+        CellProperties(
+          "480d1460-3380-4e89-9c95-ac9190f5749f",
+          TextAlignment.LEFT,
+          Justify,
+          false,
+          0,
+          0
+        )
       )
       PdfUtils.extractCells(Seq(person), Seq("name")) mustEqual List(
-        RowDetails("M", TextAlignment.LEFT, Justify, false, 0, 0)
+        CellProperties("M", TextAlignment.LEFT, Justify, false, 0, 0)
       )
     }
     "extractColumns from provide type" in {
@@ -71,6 +78,9 @@ class PdfUtilsSpec extends Specification {
         "NAME",
         "ID"
       )
+      PdfUtils.extractColumns[Person](Seq("name")) mustEqual List(
+        ColumnDetails("NAME", TextAlignment.LEFT, Justify, false, 0, 0, 1.0f)
+      )
     }
     "generate a pdf report from data" in {
       val personList: Seq[Person] = DataGen.gen(11)
@@ -78,6 +88,7 @@ class PdfUtilsSpec extends Specification {
         PdfReport(personList, destination, header.text, footer.text)
           .withFooter(footer.text, true)
           .withHeader(header.text)
+          .withCellsAlignment(TextAlignment.LEFT)
       PdfUtils.generate(pdfReportPerson)
       val file = new File(destination)
       file.exists() mustEqual true

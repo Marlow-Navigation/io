@@ -176,7 +176,7 @@ object PdfUtils extends Loggie {
   def extractCells[T: TypeTag: reflect.ClassTag](
       dataset: Seq[T],
       columns: Seq[String] = Seq()
-  ): Seq[RowDetails] = {
+  ): Seq[CellProperties] = {
     dataset.flatMap { ds =>
       val rm = runtimeMirror(getClass.getClassLoader)
       val im = rm.reflect(ds)
@@ -187,9 +187,9 @@ object PdfUtils extends Loggie {
           CellRaw(name, value)
       }.toSeq
       columns.isEmpty match {
-        case true => rawCells.map { fkv => RowDetails(fkv.value) }
+        case true => rawCells.map { fkv => CellProperties(fkv.value) }
         case false =>
-          rawCells.filter(kv => columns.contains(kv.name)).map { fkv => RowDetails(fkv.value) }
+          rawCells.filter(kv => columns.contains(kv.name)).map { fkv => CellProperties(fkv.value) }
       }
 
     }
