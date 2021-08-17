@@ -15,8 +15,7 @@ table-row-bg-color = 0.90
 ``` 
 case class Person(id: UUID, name: String, surname: String, dob: String, balance: BigDecimal)
 val dataset: Seq[Person] = ???
-val destination: String = "./src/test/resources/mn-report.pdf"
-val pdfReport = PdfReport(dataset, destination, "header text", "footer text")
+val pdfReport = PdfReport(dataset, "header text", "footer text")
 PdfUtils.generateReport(pdfReport)
 ```
 The above code will generate a report with default settings for the provided dataset to the corresponding

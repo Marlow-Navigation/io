@@ -10,11 +10,6 @@ import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.property.TextAlignment
 import com.marlow.io.utils.PdfUtils
 
-object Pdf {
-  val DefaultFileExtension = ".pdf"
-  val DefaultTempFileName = "mn-pdf-"
-}
-
 sealed trait Orientation {
   def value: String = this.toString.toLowerCase
 }
@@ -198,7 +193,6 @@ object PdfReport {
 
   def apply[T: TypeTag: reflect.ClassTag](
       ds: Seq[T],
-      dest: String,
       headerContent: String,
       footerContent: String
   ): PdfReport = {
@@ -206,10 +200,10 @@ object PdfReport {
       pageSize = PageSize.A4,
       orientation = Portrait,
       pageNumbers = true,
-      pageNumbersFontSize = 8,
+      pageNumbersFontSize = 7,
       font = PdfFontFactory.createFont("Helvetica"),
       fontBold = PdfFontFactory.createFont("Helvetica-Bold"),
-      fontSize = 8,
+      fontSize = 7,
       alignment = TextAlignment.JUSTIFIED
     )
     val columnDetails: Seq[ColumnDetails] = PdfUtils.extractColumns[T]()
@@ -221,19 +215,18 @@ object PdfReport {
       columns = columnDetails,
       cells = cellDetails
     )
+
     PdfReport(
       pageProperties = pageProperties,
-      dest = dest,
       details = Seq(tableDetails),
-      header = None,
-      footer = None
+      header = Some(Header(headerContent)),
+      footer = Some(Footer(footerContent))
     )
   }
 }
 
 case class PdfReport(
     pageProperties: PageProperties,
-    dest: String,
     details: Seq[TableDetails],
     header: Option[Header],
     footer: Option[Footer]
@@ -264,4 +257,14 @@ case class PdfReport(
         )
       )
     )
+
+  def portrait: PdfReport =
+    this.copy(pageProperties = this.pageProperties.copy(orientation = Portrait))
+
+  def landScape: PdfReport =
+    this.copy(pageProperties = this.pageProperties.copy(orientation = Landscape))
+
+  def setFontSize(size: Int): PdfReport =
+    this.copy(pageProperties = this.pageProperties.copy(fontSize = size))
+
 }
