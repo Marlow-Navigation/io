@@ -17,5 +17,5 @@ object ProjectLibraryVersions {
   val Slf4jSimpleVersion = "1.7.30"
   val BcpkixJdk15onVersion = "1.68"
   val BcprovJdk15onVersion = "1.68"
-  val PureConfigVersion = "0.16.0"
+  val PureConfigVersion = "0.14.1"
 }

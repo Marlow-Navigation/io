@@ -11,16 +11,13 @@ import com.itextpdf.layout.element._
 import com.itextpdf.layout.property.{TextAlignment, UnitValue, VerticalAlignment}
 import com.marlow.io.config.IOConfig
 import com.marlow.io.misc.Loggie
-import com.marlow.io.model.Pdf._
 import com.marlow.io.model._
-
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
+
 import scala.reflect.runtime.{universe => ru}
 import ru._
-
-import java.io.File
-
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import scala.util.{Failure, Success, Try}
 
 object PdfUtils extends Loggie {
@@ -47,7 +44,10 @@ object PdfUtils extends Loggie {
       if (headerCell) PdfFontFactory.createFont(fontBold.getFontProgram.getFontNames.getFontName)
       else PdfFontFactory.createFont(font.getFontProgram.getFontNames.getFontName)
     )
-    cell.setFontSize(fontSize)
+    cell.setFontSize(
+      if (headerCell) fontSize - 1
+      else fontSize
+    )
     cell.setTextAlignment(cellDetails.alignment)
     if (cellDetails.html) {
       val cp = new ConverterProperties
@@ -71,9 +71,10 @@ object PdfUtils extends Loggie {
 
   def generate(
       pdfReport: PdfReport
-  ): Unit = {
-    val tempFile = File.createTempFile(DefaultTempFileName, DefaultFileExtension)
-    val pdfWriter = new PdfWriter(tempFile)
+  ): Array[Byte] = {
+    val outputStream = new ByteArrayOutputStream()
+    val tempBAOS = new ByteArrayOutputStream()
+    val pdfWriter = new PdfWriter(tempBAOS)
     val pdfDoc = new PdfDocument(pdfWriter)
     val doc = new Document(
       pdfDoc,
@@ -114,8 +115,14 @@ object PdfUtils extends Loggie {
 
       doc.close()
       pdfDoc.close()
+      tempBAOS.close()
 
-      val pdfDocFinal = new PdfDocument(new PdfReader(tempFile), new PdfWriter(pdfReport.dest))
+      val inputStream = new ByteArrayInputStream(tempBAOS.toByteArray)
+      val pdfDocFinal =
+        new PdfDocument(
+          new PdfReader(inputStream),
+          new PdfWriter(outputStream)
+        )
       val docFinal = new Document(
         pdfDocFinal,
         pdfReport.pageProperties.pageSizeWithOrientation,
@@ -136,11 +143,18 @@ object PdfUtils extends Loggie {
           )
         }
       }
-      Seq(docFinal, pdfDocFinal, doc, pdfDoc).foreach(c => Try(c.close()))
-      Try(tempFile.delete)
+
+      Seq(docFinal, pdfDocFinal, doc, pdfDoc, tempBAOS, outputStream).foreach(c => Try(c.close()))
+      Try {
+        outputStream.flush()
+      }
     } match {
-      case Failure(exception) => logger.error(exception.getMessage, exception)
-      case Success(_)         => logger.info("Done")
+      case Failure(exception) =>
+        logger.error(exception.getMessage, exception)
+        throw exception
+      case Success(_) =>
+        logger.info("Done")
+        outputStream.toByteArray
     }
   }
 
@@ -180,34 +194,41 @@ object PdfUtils extends Loggie {
     dataset.flatMap { ds =>
       val rm = runtimeMirror(getClass.getClassLoader)
       val im = rm.reflect(ds)
-      val rawCells: Seq[CellRaw] = typeOf[T].members.collect {
-        case m: MethodSymbol if m.isCaseAccessor =>
-          val name = m.name.toString
-          val value = im.reflectMethod(m).apply().toString
-          CellRaw(name, value)
-      }.toSeq
+      val rawCells: Seq[CellRaw] = typeOf[T].members
+        .collect {
+          case m: MethodSymbol if m.isCaseAccessor =>
+            val name = m.name.toString
+            val value = im.reflectMethod(m).apply().toString
+            CellRaw(name, value)
+        }
+        .toSeq
+        .reverse
       columns.isEmpty match {
         case true => rawCells.map { fkv => CellProperties(fkv.value) }
         case false =>
           rawCells.filter(kv => columns.contains(kv.name)).map { fkv => CellProperties(fkv.value) }
       }
-
     }
   }
 
   def extractColumns[T: TypeTag: reflect.ClassTag](
       selection: Seq[String] = Seq()
   ): Seq[ColumnDetails] = {
-    val rawColumns = typeOf[T].members.collect {
-      case m: MethodSymbol if m.isCaseAccessor =>
-        ColumnDetails(m.name.toString)
-    }.toSeq
+    val rawColumns = typeOf[T].members
+      .collect {
+        case m: MethodSymbol if m.isCaseAccessor =>
+          ColumnDetails(m.name.toString)
+      }
+      .toSeq
+      .reverse
     val filteredColumns = selection.isEmpty match {
       case true => rawColumns
       case false =>
         rawColumns.filter(kv => selection.contains(kv.text))
     }
-    filteredColumns.map(c => c.copy(text = c.text.toUpperCase))
+    filteredColumns.map(c =>
+      c.copy(text = c.text.split("(?=\\p{Lu})").map(_.toUpperCase).mkString(" "))
+    )
   }
 
 }

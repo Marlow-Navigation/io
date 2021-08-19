@@ -6,11 +6,9 @@ import com.marlow.io.model._
 import com.marlow.io.utils.PdfUtils
 import org.specs2.mutable.Specification
 
-import java.io.File
 import java.util.UUID
 
 class PdfUtilsSpec extends Specification {
-  val destination = s"./src/test/resources/mn-pdf-${UUID.randomUUID().toString}.pdf"
   val header: Header = Header(
     text =
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n" +
@@ -46,7 +44,7 @@ class PdfUtilsSpec extends Specification {
       )
       PdfUtils.extractCells(Seq(person), Seq("id", "name")) mustEqual List(
         CellProperties(
-          "M",
+          "480d1460-3380-4e89-9c95-ac9190f5749f",
           TextAlignment.LEFT,
           Justify,
           false,
@@ -54,7 +52,7 @@ class PdfUtilsSpec extends Specification {
           0
         ),
         CellProperties(
-          "480d1460-3380-4e89-9c95-ac9190f5749f",
+          "M",
           TextAlignment.LEFT,
           Justify,
           false,
@@ -68,15 +66,15 @@ class PdfUtilsSpec extends Specification {
     }
     "extractColumns from provide type" in {
       PdfUtils.extractColumns[Person]().map(_.text) mustEqual Seq(
-        "BALANCE",
-        "DOB",
-        "SURNAME",
+        "ID",
         "NAME",
-        "ID"
+        "SURNAME",
+        "DOB",
+        "BALANCE"
       )
       PdfUtils.extractColumns[Person](Seq("id", "name")).map(_.text) mustEqual Seq(
-        "NAME",
-        "ID"
+        "ID",
+        "NAME"
       )
       PdfUtils.extractColumns[Person](Seq("name")) mustEqual List(
         ColumnDetails("NAME", TextAlignment.LEFT, Justify, false, 0, 0, 1.0f)
@@ -85,14 +83,12 @@ class PdfUtilsSpec extends Specification {
     "generate a pdf report from data" in {
       val personList: Seq[Person] = DataGen.gen(11)
       val pdfReportPerson =
-        PdfReport(personList, destination, header.text, footer.text)
+        PdfReport(personList, header.text, footer.text)
           .withFooter(footer.text, true)
           .withHeader(header.text)
           .withCellsAlignment(TextAlignment.LEFT)
-      PdfUtils.generate(pdfReportPerson)
-      val file = new File(destination)
-      file.exists() mustEqual true
-      file.length() mustEqual 16103
+      val reportArrayBytes: Array[Byte] = PdfUtils.generate(pdfReportPerson)
+      reportArrayBytes.length mustEqual 14370
     }
   }
 }
