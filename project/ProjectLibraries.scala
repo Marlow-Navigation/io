@@ -24,7 +24,10 @@ object ProjectLibraries {
       ItextpdfSvg,
       PureConfig,
       Slf4jApi,
-      Slf4jSimple
+      Slf4jSimple,
+      KantanCsvGeneric,
+      KantanCsvRefined,
+      KantanCsvEnumeratum
     ) ++ testkit
   }
 
@@ -47,6 +50,9 @@ object ProjectLibraries {
     val BcpkixJdk15on = "org.bouncycastle" % "bcpkix-jdk15on" % BcpkixJdk15onVersion
     val BcprovJdk15on = "org.bouncycastle" % "bcprov-jdk15on" % BcprovJdk15onVersion
     val PureConfig = "com.github.pureconfig" %% "pureconfig" % PureConfigVersion
+    val KantanCsvGeneric = "com.nrinaudo" %% "kantan.csv-generic" % KantanCsvVersion
+    val KantanCsvRefined = "com.nrinaudo" %% "kantan.csv-refined" % KantanCsvVersion
+    val KantanCsvEnumeratum = "com.nrinaudo" %% "kantan.csv-enumeratum" % KantanCsvVersion
   }
 
   object TestLibraries {

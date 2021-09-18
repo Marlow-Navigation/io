@@ -18,4 +18,5 @@ object ProjectLibraryVersions {
   val BcpkixJdk15onVersion = "1.68"
   val BcprovJdk15onVersion = "1.68"
   val PureConfigVersion = "0.14.1"
+  val KantanCsvVersion = "0.6.1"
 }
