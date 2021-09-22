@@ -77,18 +77,91 @@ class PdfUtilsSpec extends Specification {
         "NAME"
       )
       PdfUtils.extractColumns[Person](Seq("name")) mustEqual List(
-        ColumnDetails("NAME", TextAlignment.LEFT, Justify, false, 0, 0, 1.0f)
+        ColumnDetails("NAME", TextAlignment.LEFT, Justify, false, 1, 1, 1.0f)
       )
     }
     "generate a pdf report from data" in {
       val personList: Seq[Person] = DataGen.gen(11)
       val pdfReportPerson =
-        PdfReport(personList, header.text, footer.text)
+        PdfReport(Seq(personList), header.text, footer.text)
           .withFooter(footer.text, true)
           .withHeader(header.text)
           .withCellsAlignment(TextAlignment.LEFT)
       val reportArrayBytes: Array[Byte] = PdfUtils.generate(pdfReportPerson)
       reportArrayBytes.length mustEqual 14370
+    }
+    "generate a pdf report from data with column overrides" in {
+      val personList: Seq[Person] = DataGen.gen(11)
+      val pdfReportPerson =
+        PdfReport(
+          Seq(personList),
+          header.text,
+          footer.text,
+          Seq(),
+          Some(
+            Seq(
+              "IDD",
+              "NAMEE",
+              "SURNAMEE",
+              "DOBB",
+              "BALANCEE"
+            )
+          )
+        ).withFooter(footer.text, true)
+          .withHeader(header.text)
+          .withCellsAlignment(TextAlignment.LEFT)
+      val reportArrayBytes: Array[Byte] = PdfUtils.generate(pdfReportPerson)
+      reportArrayBytes.length mustEqual 14380
+    }
+    "generate a pdf report from data with column span" in {
+      val personList: Seq[Person] = DataGen.gen(11)
+      val pdfReportPerson =
+        PdfReport(
+          Seq(personList),
+          header.text,
+          footer.text,
+          Seq(),
+          Some(
+            Seq(
+              "IDD",
+              "NAMEE",
+              "SURNAMEE",
+              "DOBB",
+              "BALANCEE"
+            )
+          )
+        ).withFooter(footer.text, true)
+          .withHeader(header.text)
+          .withCellsAlignment(TextAlignment.LEFT)
+          .maxSpanForColumn(1)
+
+      val reportArrayBytes: Array[Byte] = PdfUtils.generate(pdfReportPerson)
+      reportArrayBytes.length mustEqual 12954
+    }
+    "generate a pdf report from data with column sum, multiple tables, column overrides" in {
+      val pdfReportPerson =
+        PdfReport(
+          Seq(DataGen.gen(11), DataGen.gen(5)),
+          header.text,
+          footer.text,
+          Seq(),
+          Some(
+            Seq(
+              "IDD",
+              "NAMEE",
+              "SURNAMEE",
+              "DOBB",
+              "BALANCEE"
+            )
+          )
+        ).withFooter(footer.text, true)
+          .withHeader(header.text)
+          .withCellsAlignment(TextAlignment.LEFT)
+          .sumForColumn(5)
+          .maxSpanForColumn(1)
+
+      val reportArrayBytes: Array[Byte] = PdfUtils.generate(pdfReportPerson)
+      reportArrayBytes.length mustEqual 19061
     }
   }
 }
