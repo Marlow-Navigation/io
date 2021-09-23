@@ -9,6 +9,7 @@ import com.itextpdf.layout.Canvas
 import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.property.TextAlignment
 import com.marlow.io.utils.PdfUtils
+import com.itextpdf.layout.borders.{DoubleBorder, SolidBorder, Border => ItextBorder}
 
 sealed trait Orientation {
   def value: String = this.toString.toLowerCase
@@ -118,13 +119,44 @@ case class Footer(
   override def handleEvent(event: Event): Unit = PdfUtils.pageHeaderFooter(this, event)
 }
 
+sealed trait BorderType
+case object TotalCell extends BorderType
+case object NoBorder extends BorderType
+
+object BorderStyle {
+  def apply(borderType: BorderType): BorderStyle = borderType match {
+    case TotalCell =>
+      new BorderStyle(
+        borderTopStyle = new SolidBorder(1),
+        borderBottomStyle = new DoubleBorder(1),
+        borderLeftStyle = ItextBorder.NO_BORDER,
+        borderRightStyle = ItextBorder.NO_BORDER,
+        borderType = TotalCell
+      )
+    case _ => BorderStyle()
+  }
+}
+
+case class BorderStyle(
+    borderTopStyle: ItextBorder = ItextBorder.NO_BORDER,
+    borderBottomStyle: ItextBorder = ItextBorder.NO_BORDER,
+    borderLeftStyle: ItextBorder = ItextBorder.NO_BORDER,
+    borderRightStyle: ItextBorder = ItextBorder.NO_BORDER,
+    borderType: BorderType = NoBorder
+)
+
 case class TableDetails(
-    border: Int,
+    border: BorderStyle,
     keepTogether: Boolean,
     keepWithNext: Boolean,
     columns: Seq[ColumnDetails],
-    cells: Seq[CellProperties]
-)
+    cells: Seq[CellProperties],
+    maxSpanColumn: Seq[Int] = Seq(),
+    sumForColumn: Seq[Int] = Seq()
+) {
+  def addSumTotalBorder: TableDetails =
+    this.copy(border = BorderStyle(TotalCell))
+}
 
 sealed trait CellType
 case object CellHeader extends CellType
@@ -163,8 +195,8 @@ case class ColumnDetails(
     alignment: TextAlignment = TextAlignment.LEFT,
     htmlAlignment: HtmlTextAlignment = Justify,
     html: Boolean,
-    colspan: Int = 0,
-    rowspan: Int = 0,
+    colspan: Int = 1,
+    rowspan: Int = 1,
     width: Float
 ) extends CellDetails {
   override def cellType: CellType = CellHeader
@@ -185,6 +217,8 @@ case class CellProperties(
     rowspan: Int = 0
 ) extends CellDetails {
   override def cellType: CellType = CellRow
+  def empty: CellProperties = this.copy(text = "")
+  def setText(text: String): CellProperties = this.copy(text = text)
 }
 
 object PdfReport {
@@ -192,9 +226,11 @@ object PdfReport {
   import ru._
 
   def apply[T: TypeTag: reflect.ClassTag](
-      ds: Seq[T],
+      data: Seq[Seq[T]],
       headerContent: String,
-      footerContent: String
+      footerContent: String,
+      sumTotalColumn: Seq[Int] = Seq(),
+      columnOverrides: Option[Seq[String]] = None
   ): PdfReport = {
     val pageProperties = PageProperties(
       pageSize = PageSize.A4,
@@ -206,19 +242,33 @@ object PdfReport {
       fontSize = 7,
       alignment = TextAlignment.JUSTIFIED
     )
-    val columnDetails: Seq[ColumnDetails] = PdfUtils.extractColumns[T]()
-    val cellDetails: Seq[CellProperties] = PdfUtils.extractCells(ds)
-    val tableDetails: TableDetails = TableDetails(
-      border = 0,
-      keepTogether = false,
-      keepWithNext = false,
-      columns = columnDetails,
-      cells = cellDetails
-    )
+    val allTableDetails = data.map { ds =>
+      val columnDetails: Seq[ColumnDetails] = PdfUtils.extractColumns[T]()
+      val maybeColumnWithOverrides = columnOverrides.fold(columnDetails) { details =>
+        details.size == columnDetails.size match {
+          case true =>
+            columnDetails.zipWithIndex.map { columnWithIndex =>
+              val (column, index) = columnWithIndex
+              column.copy(text = details(index))
+            }
+          case false => columnDetails
+        }
+      }
 
-    PdfReport(
+      val cellDetails: Seq[CellProperties] = PdfUtils.extractCells(ds)
+      TableDetails(
+        border = BorderStyle(),
+        keepTogether = false,
+        keepWithNext = false,
+        columns = maybeColumnWithOverrides,
+        cells = cellDetails,
+        sumForColumn = sumTotalColumn
+      )
+    }
+
+    new PdfReport(
       pageProperties = pageProperties,
-      details = Seq(tableDetails),
+      details = allTableDetails,
       header = Some(Header(headerContent)),
       footer = Some(Footer(footerContent))
     )
@@ -231,6 +281,8 @@ case class PdfReport(
     header: Option[Header],
     footer: Option[Footer]
 ) {
+  def isMultiTableReport: Boolean = details.size > 1
+
   def withFooter(text: String, html: Boolean = false): PdfReport =
     this.copy(footer = Some(Footer(text).copy(html = html)))
 
@@ -267,4 +319,18 @@ case class PdfReport(
   def setFontSize(size: Int): PdfReport =
     this.copy(pageProperties = this.pageProperties.copy(fontSize = size))
 
+  def maxSpanForColumn(index: Int): PdfReport =
+    this.copy(details = details.map { tDetails =>
+      tDetails.copy(maxSpanColumn = tDetails.maxSpanColumn :+ index)
+    })
+
+  def sumForColumn(index: Int): PdfReport =
+    this
+      .copy(details = details.map { tDetails =>
+        tDetails.copy(sumForColumn = tDetails.sumForColumn :+ index)
+      })
+}
+
+case class ColumnSum(column: Int, sum: BigDecimal) {
+  def matchIndex(index: Int): Boolean = index == this.column - 1
 }

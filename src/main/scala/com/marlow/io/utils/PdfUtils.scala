@@ -28,45 +28,163 @@ object PdfUtils extends Loggie {
   def addCell(
       tDetails: TableDetails,
       table: Table,
-      cellDetails: CellDetails,
+      cellWithIndex: (CellDetails, Int),
       font: PdfFont,
       fontBold: PdfFont,
       fontSize: Int
-  ): Unit = {
-    val rowspan = cellDetails.rowspan
-    val colspan = cellDetails.colspan
-    val headerCell = cellDetails.isHeader
-    val cell = new Cell(rowspan, colspan)
-    if (tDetails.border == 0)
-      cell.setBorder(ItextBorder.NO_BORDER)
+  ): Option[ColumnSum] = {
+    val (cellDetails, index) = (cellWithIndex._1, cellWithIndex._2 + 1)
+    def applyCell(rowSpan: Int): Unit = {
+      val rowspan = rowSpan
+      val colspan = cellDetails.colspan
+      val headerCell = cellDetails.isHeader
+      val cell = new Cell(rowspan, colspan)
+      val isCellEmpty = Try(cellDetails.text.isEmpty).getOrElse(true)
 
-    cell.setFont(
-      if (headerCell) PdfFontFactory.createFont(fontBold.getFontProgram.getFontNames.getFontName)
-      else PdfFontFactory.createFont(font.getFontProgram.getFontNames.getFontName)
-    )
-    cell.setFontSize(
-      if (headerCell) fontSize - 1
-      else fontSize
-    )
-    cell.setTextAlignment(cellDetails.alignment)
-    if (cellDetails.html) {
-      val cp = new ConverterProperties
-      cp.setImmediateFlush(true)
-      HtmlConverter
-        .convertToElements(toHtml(cellDetails.asHtmlDetails(font, fontSize)), cp)
-        .forEach((element: IElement) => {
-          cell.add(element.asInstanceOf[IBlockElement])
-        })
-    } else {
-      cell.add(new Paragraph(cellDetails.text))
+      (tDetails.border.borderType, isCellEmpty) match {
+        case (NoBorder, _) | (_, true) => cell.setBorder(ItextBorder.NO_BORDER)
+        case (TotalCell, _) =>
+          cell.setBorderTop(tDetails.border.borderTopStyle)
+          cell.setBorderBottom(tDetails.border.borderBottomStyle)
+          cell.setBorderLeft(tDetails.border.borderLeftStyle)
+          cell.setBorderRight(tDetails.border.borderRightStyle)
+      }
+
+      cell.setFont(
+        if (headerCell) PdfFontFactory.createFont(fontBold.getFontProgram.getFontNames.getFontName)
+        else PdfFontFactory.createFont(font.getFontProgram.getFontNames.getFontName)
+      )
+      cell.setFontSize(
+        if (headerCell) fontSize - 1
+        else fontSize
+      )
+      cell.setTextAlignment(cellDetails.alignment)
+      if (cellDetails.html) {
+        val cp = new ConverterProperties
+        cp.setImmediateFlush(true)
+        HtmlConverter
+          .convertToElements(toHtml(cellDetails.asHtmlDetails(font, fontSize)), cp)
+          .forEach((element: IElement) => {
+            cell.add(element.asInstanceOf[IBlockElement])
+          })
+      } else {
+        cell.add(new Paragraph(cellDetails.text))
+      }
+      if (headerCell) {
+        table.addHeaderCell(cell)
+        cell.setBackgroundColor(DefaultTableHeaderBgColor)
+      } else {
+        table.addCell(cell)
+        if (tDetails.border.borderType != TotalCell && rowspan == 0 && (cell.getRow % 2) == 1)
+          cell.setBackgroundColor(DefaultTableRowBgColor)
+      }
     }
-    if (headerCell) {
-      table.addHeaderCell(cell)
-      cell.setBackgroundColor(DefaultTableHeaderBgColor)
-    } else {
-      table.addCell(cell)
-      if (rowspan == 0 && (cell.getRow % 2) == 1) cell.setBackgroundColor(DefaultTableRowBgColor)
+    prepareRowCell(tDetails, index, cellDetails, applyCell)
+  }
+
+  private def prepareRowCell(
+      tDetails: TableDetails,
+      index: Int,
+      cellDetails: CellDetails,
+      applyCell: Int => Unit
+  ): Option[ColumnSum] = {
+    val headers = tDetails.columns
+    val maxRowSpan = tDetails.cells.size / headers.size
+    val cellColumn = {
+      val mod = index % headers.size
+      mod == 0 match {
+        case true  => headers.size
+        case false => mod
+      }
     }
+
+    val columnSum: Option[ColumnSum] = {
+      !cellDetails.isHeader && tDetails.sumForColumn.nonEmpty && tDetails.sumForColumn.contains(
+        cellColumn
+      ) match {
+        case true =>
+          Try {
+            ColumnSum(cellColumn, BigDecimal(cellDetails.text))
+          }.toOption
+        case false =>
+          None
+      }
+    }
+
+    !cellDetails.isHeader && tDetails.maxSpanColumn.nonEmpty && tDetails.maxSpanColumn.contains(
+      cellColumn
+    ) match {
+      case true =>
+        val isFirstOccurrence = index == cellColumn + headers.size
+        isFirstOccurrence match {
+          case false =>
+          case true =>
+            applyCell(maxRowSpan)
+        }
+      case false =>
+        applyCell(cellDetails.rowspan)
+    }
+    columnSum
+  }
+
+  def addSumCell(
+      tableDetails: TableDetails,
+      sumColumn: ColumnSum,
+      table: Table,
+      pdfReport: PdfReport
+  ): Unit = {
+    val tableRow: TableDetails =
+      tableDetails
+        .copy(cells = tableDetails.cells.take(tableDetails.columns.size))
+        .addSumTotalBorder
+    val rowCells: Seq[CellProperties] = tableRow.cells.zipWithIndex.map { cellWithIndex =>
+      val (cell, index) = cellWithIndex
+      if (sumColumn.matchIndex(index))
+        cell.setText(s"${sumColumn.sum}")
+      else
+        cell.empty
+    }
+    rowCells.foreach { cell =>
+      addCell(
+        tableRow.copy(cells = rowCells),
+        table,
+        (cell, sumColumn.column - 1),
+        pdfReport.pageProperties.font,
+        pdfReport.pageProperties.fontBold,
+        pdfReport.pageProperties.fontSize
+      )
+    }
+  }
+
+  def addCellDetails(
+      tableDetails: TableDetails,
+      table: Table,
+      pdfReport: PdfReport
+  ): Seq[ColumnSum] = {
+    def cells: Seq[CellDetails] = tableDetails.columns ++ tableDetails.cells
+    val tableSumColumns: Seq[ColumnSum] = cells.zipWithIndex.foldLeft(Seq[ColumnSum]()) {
+      (agg, cellWithIndex) =>
+        addCell(
+          tableDetails,
+          table,
+          cellWithIndex,
+          pdfReport.pageProperties.font,
+          pdfReport.pageProperties.fontBold,
+          pdfReport.pageProperties.fontSize
+        ).fold(agg)(cs => agg :+ cs)
+    }
+    tableSumColumns
+      .groupBy(_.column)
+      .map { x => ColumnSum(x._1, x._2.map(_.sum).sum) }
+      .foreach { sumColumn => addSumCell(tableDetails, sumColumn, table, pdfReport) }
+    tableSumColumns
+  }
+
+  def prepareTable(tableDetails: TableDetails): Table = {
+    val colWidths = tableDetails.columns.map(_.width).toArray
+    val table: Table = new Table(UnitValue.createPercentArray(colWidths)).useAllAvailableWidth
+    table.setKeepTogether(tableDetails.keepTogether)
+    table.setKeepWithNext(tableDetails.keepWithNext)
   }
 
   def generate(
@@ -92,25 +210,25 @@ object PdfUtils extends Loggie {
 
       pdfReport.header.foreach(h => pdfDoc.addEventHandler(PdfDocumentEvent.START_PAGE, h))
       pdfReport.footer.foreach(f => pdfDoc.addEventHandler(PdfDocumentEvent.END_PAGE, f))
-      pdfReport.details.foreach { tableDetails =>
-        if (tableDetails.columns.isEmpty)
-          throw new Exception("The provided table has no columns")
-        val colWidths = tableDetails.columns.map(_.width).toArray
-        val table: Table = new Table(UnitValue.createPercentArray(colWidths)).useAllAvailableWidth
-        table.setKeepTogether(tableDetails.keepTogether)
-        table.setKeepWithNext(tableDetails.keepWithNext)
-        def cells: Seq[CellDetails] = tableDetails.columns ++ tableDetails.cells
-        cells.foreach { cell =>
-          addCell(
-            tableDetails,
-            table,
-            cell,
-            pdfReport.pageProperties.font,
-            pdfReport.pageProperties.fontBold,
-            pdfReport.pageProperties.fontSize
-          )
+      val totalSumColumns = pdfReport.details
+        .foldLeft(Seq[ColumnSum]()) { (agg, tableDetails) =>
+          if (tableDetails.columns.isEmpty)
+            throw new Exception("The provided table has no columns")
+          val table: Table = prepareTable(tableDetails)
+          val tableSumColumns = addCellDetails(tableDetails, table, pdfReport)
+          doc.add(table)
+          agg ++ tableSumColumns
         }
-        doc.add(table)
+        .groupBy(_.column)
+        .map { sumColumns => ColumnSum(sumColumns._1, sumColumns._2.map(_.sum).sum) }
+        .toList
+
+      if (pdfReport.isMultiTableReport) {
+        totalSumColumns.foreach { sumColumn =>
+          val table: Table = prepareTable(pdfReport.details.head)
+          addSumCell(pdfReport.details.head, sumColumn, table, pdfReport)
+          doc.add(table)
+        }
       }
 
       doc.close()
