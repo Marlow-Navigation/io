@@ -14,12 +14,16 @@ object CsvUtils {
   def generate[T: TypeTag: reflect.ClassTag](
       ds: List[T],
       headerColumns: Option[Seq[String]] = None,
-      separator: Char = ','
+      separator: Char = ',',
+      quote: Char = '"'
   )(implicit encoder: RowEncoder[T]): Array[Byte] = {
     val csvReport = CsvReport(ds, headerColumns)
     val csvString = ds.asCsv(
-      CsvConfiguration.rfc.withCellSeparator(separator).withHeader(csvReport.header.columns: _*)
+      CsvConfiguration.rfc
+        .withQuote(quote)
+        .withCellSeparator(separator)
+        .withHeader(csvReport.header.columns: _*)
     )
-    csvString.getBytes(StandardCharsets.UTF_8)
+    csvString.replaceAll("\u0000", "").getBytes(StandardCharsets.UTF_8)
   }
 }
