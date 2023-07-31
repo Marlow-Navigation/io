@@ -80,6 +80,24 @@ class PdfUtilsSpec extends Specification {
         ColumnDetails("NAME", TextAlignment.LEFT, Justify, false, 1, 1, 1.0f)
       )
     }
+    "override columns only when non empty string" in {
+      val personList: List[Person] = DataGen.gen(11)
+      val pdfReportPerson =
+        PdfReport(
+          Seq(personList),
+          header.text,
+          footer.text,
+          columnOverrides = Some(Seq("Person ID", "Name", "", "", ""))
+        )
+
+      pdfReportPerson.details.head.columns mustEqual List(
+        ColumnDetails("Person ID", TextAlignment.LEFT, Justify, false, 1, 1, 1.0f),
+        ColumnDetails("Name", TextAlignment.LEFT, Justify, false, 1, 1, 1.0f),
+        ColumnDetails("SURNAME", TextAlignment.LEFT, Justify, false, 1, 1, 1.0f),
+        ColumnDetails("DOB", TextAlignment.LEFT, Justify, false, 1, 1, 1.0f),
+        ColumnDetails("BALANCE", TextAlignment.LEFT, Justify, false, 1, 1, 1.0f)
+      )
+    }
     "generate a pdf report from data" in {
       val personList: Seq[Person] = DataGen.gen(11)
       val pdfReportPerson =

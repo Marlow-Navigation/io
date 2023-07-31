@@ -249,7 +249,8 @@ object PdfReport {
           case true =>
             columnDetails.zipWithIndex.map { columnWithIndex =>
               val (column, index) = columnWithIndex
-              column.copy(text = details(index))
+              if (details(index).isEmpty) column
+              else column.copy(text = details(index))
             }
           case false => columnDetails
         }
