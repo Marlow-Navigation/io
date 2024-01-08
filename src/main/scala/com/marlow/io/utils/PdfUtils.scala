@@ -190,6 +190,7 @@ object PdfUtils extends Loggie {
   def generate(
       pdfReport: PdfReport
   ): Array[Byte] = {
+    val isPortrait = pdfReport.pageProperties.orientation == Portrait
     val outputStream = new ByteArrayOutputStream()
     val tempBAOS = new ByteArrayOutputStream()
     val pdfWriter = new PdfWriter(tempBAOS)
@@ -252,11 +253,11 @@ object PdfUtils extends Loggie {
         for (pageNo <- 1 to numberOfPages) {
           docFinal.showTextAligned(
             new Paragraph(s"Page $pageNo of $numberOfPages"),
-            pdfDocFinal.getPage(pageNo).getPageSize.getWidth - docFinal.getRightMargin,
-            docFinal.getBottomMargin,
+            pdfDocFinal.getPage(pageNo).getPageSize.getWidth - docFinal.getBottomMargin,
+            0,
             pageNo,
-            TextAlignment.RIGHT,
-            VerticalAlignment.TOP,
+            TextAlignment.CENTER,
+            VerticalAlignment.BOTTOM,
             0
           )
         }
