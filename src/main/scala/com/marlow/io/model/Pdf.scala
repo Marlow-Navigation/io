@@ -54,17 +54,27 @@ sealed trait PageHF extends IEventHandler {
   def font: PdfFont
   def fontSize: Float
   def html: Boolean
+
+  val horizontalAlignment: TextAlignment = TextAlignment.CENTER
   def alignment: HtmlTextAlignment = Justify
   def height: Option[Int] = None
   def yRotationOffset(pageSize: Rectangle, paragraph: Paragraph): Float
+
+  def xRotationOffset(pageSize: Rectangle, paragraph: Paragraph): Float = horizontalAlignment match {
+    case TextAlignment.LEFT => 0
+    case TextAlignment.RIGHT => pageSize.getWidth
+    case TextAlignment.CENTER => pageSize.getWidth / 2
+  }
+
+
   def canvas(pdf: PdfDocument, page: PdfPage, paragraph: Paragraph): Canvas = {
     val pdfCanvas = new PdfCanvas(page.getLastContentStream, page.getResources, pdf)
     val canvas = new Canvas(pdfCanvas, page.getPageSize)
     canvas.showTextAligned(
       paragraph,
-      page.getPageSize.getWidth / 2,
+      xRotationOffset(page.getPageSize, paragraph),
       yRotationOffset(page.getPageSize, paragraph),
-      TextAlignment.CENTER
+      TextAlignment.LEFT
     )
   }
   def asHtmlDetails: HtmlDetails = HtmlDetails(
@@ -113,7 +123,8 @@ case class Footer(
     textRepeat: Boolean,
     font: PdfFont,
     fontSize: Float,
-    html: Boolean
+    html: Boolean,
+    override val horizontalAlignment: TextAlignment = TextAlignment.CENTER
 ) extends PageHF {
   def yRotationOffset(pageSize: Rectangle, paragraph: Paragraph): Float = 0
   override def handleEvent(event: Event): Unit = PdfUtils.pageHeaderFooter(this, event)
