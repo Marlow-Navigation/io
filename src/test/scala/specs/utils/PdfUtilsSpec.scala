@@ -5,6 +5,7 @@ import com.itextpdf.layout.property.TextAlignment
 import com.marlow.io.model._
 import com.marlow.io.utils.PdfUtils
 import org.specs2.mutable.Specification
+import specs.utils.DataGen.base64Image
 
 import java.util.UUID
 
@@ -40,13 +41,15 @@ class PdfUtilsSpec extends Specification {
         "M",
         "K",
         "1990-01-12",
-        120190
+        120190,
+        base64Image
       )
       PdfUtils.extractCells(Seq(person), Seq("id", "name")) mustEqual List(
         CellProperties(
           "480d1460-3380-4e89-9c95-ac9190f5749f",
           TextAlignment.LEFT,
           Justify,
+          false,
           false,
           0,
           0
@@ -56,12 +59,13 @@ class PdfUtilsSpec extends Specification {
           TextAlignment.LEFT,
           Justify,
           false,
+          false,
           0,
           0
         )
       )
       PdfUtils.extractCells(Seq(person), Seq("name")) mustEqual List(
-        CellProperties("M", TextAlignment.LEFT, Justify, false, 0, 0)
+        CellProperties("M", TextAlignment.LEFT, Justify, false, false, 0, 0)
       )
     }
     "extractColumns from provide type" in {
@@ -70,14 +74,15 @@ class PdfUtilsSpec extends Specification {
         "NAME",
         "SURNAME",
         "DOB",
-        "BALANCE"
+        "BALANCE",
+        "PROFILE PIC"
       )
       PdfUtils.extractColumns[Person](Seq("id", "name")).map(_.text) mustEqual Seq(
         "ID",
         "NAME"
       )
       PdfUtils.extractColumns[Person](Seq("name")) mustEqual List(
-        ColumnDetails("NAME", TextAlignment.LEFT, Justify, false, 1, 1, 1.0f)
+        ColumnDetails("NAME", TextAlignment.LEFT, Justify, false, false, 1, 1, 1.0f)
       )
     }
     "override columns only when non empty string" in {
@@ -87,15 +92,16 @@ class PdfUtilsSpec extends Specification {
           Seq(personList),
           header.text,
           footer.text,
-          columnOverrides = Some(Seq("Person ID", "Name", "", "", ""))
+          columnOverrides = Some(Seq("Person ID", "Name", "", "", "", ""))
         )
 
       pdfReportPerson.details.head.columns mustEqual List(
-        ColumnDetails("Person ID", TextAlignment.LEFT, Justify, false, 1, 1, 1.0f),
-        ColumnDetails("Name", TextAlignment.LEFT, Justify, false, 1, 1, 1.0f),
-        ColumnDetails("SURNAME", TextAlignment.LEFT, Justify, false, 1, 1, 1.0f),
-        ColumnDetails("DOB", TextAlignment.LEFT, Justify, false, 1, 1, 1.0f),
-        ColumnDetails("BALANCE", TextAlignment.LEFT, Justify, false, 1, 1, 1.0f)
+        ColumnDetails("Person ID", TextAlignment.LEFT, Justify, false, false, 1, 1, 1.0f),
+        ColumnDetails("Name", TextAlignment.LEFT, Justify, false, false, 1, 1, 1.0f),
+        ColumnDetails("SURNAME", TextAlignment.LEFT, Justify, false, false, 1, 1, 1.0f),
+        ColumnDetails("DOB", TextAlignment.LEFT, Justify, false, false, 1, 1, 1.0f),
+        ColumnDetails("BALANCE", TextAlignment.LEFT, Justify, false, false, 1, 1, 1.0f),
+        ColumnDetails("PROFILE PIC", TextAlignment.LEFT, Justify, false, false, 1, 1, 1.0f)
       )
     }
     "generate a pdf report from data" in {
@@ -106,7 +112,7 @@ class PdfUtilsSpec extends Specification {
           .withHeader(header.text)
           .withCellsAlignment(TextAlignment.LEFT)
       val reportArrayBytes: Array[Byte] = PdfUtils.generate(pdfReportPerson)
-      reportArrayBytes.length mustEqual 14370
+      reportArrayBytes.length mustEqual 440620
     }
     "generate a pdf report from data with column overrides" in {
       val personList: Seq[Person] = DataGen.gen(11)
@@ -122,14 +128,15 @@ class PdfUtilsSpec extends Specification {
               "NAMEE",
               "SURNAMEE",
               "DOBB",
-              "BALANCEE"
+              "BALANCEE",
+              "PROFILE PIC"
             )
           )
         ).withFooter(footer.text, true)
           .withHeader(header.text)
           .withCellsAlignment(TextAlignment.LEFT)
       val reportArrayBytes: Array[Byte] = PdfUtils.generate(pdfReportPerson)
-      reportArrayBytes.length mustEqual 14380
+      reportArrayBytes.length mustEqual 440629
     }
     "generate a pdf report from data with column span" in {
       val personList: Seq[Person] = DataGen.gen(11)
@@ -145,7 +152,8 @@ class PdfUtilsSpec extends Specification {
               "NAMEE",
               "SURNAMEE",
               "DOBB",
-              "BALANCEE"
+              "BALANCEE",
+              "PROFILE PIC"
             )
           )
         ).withFooter(footer.text, true)
@@ -154,7 +162,7 @@ class PdfUtilsSpec extends Specification {
           .maxSpanForColumn(1)
 
       val reportArrayBytes: Array[Byte] = PdfUtils.generate(pdfReportPerson)
-      reportArrayBytes.length mustEqual 12954
+      reportArrayBytes.length mustEqual 439150
     }
     "generate a pdf report from data with column sum, multiple tables, column overrides" in {
       val pdfReportPerson =
@@ -169,7 +177,8 @@ class PdfUtilsSpec extends Specification {
               "NAMEE",
               "SURNAMEE",
               "DOBB",
-              "BALANCEE"
+              "BALANCEE",
+              "PROFILE PIC"
             )
           )
         ).withFooter(footer.text, true)
@@ -179,7 +188,7 @@ class PdfUtilsSpec extends Specification {
           .maxSpanForColumn(1)
 
       val reportArrayBytes: Array[Byte] = PdfUtils.generate(pdfReportPerson)
-      reportArrayBytes.length mustEqual 19061
+      reportArrayBytes.length mustEqual 640524
     }
   }
 }

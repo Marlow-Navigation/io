@@ -19,4 +19,5 @@ object ProjectLibraryVersions {
   val BcprovJdk15onVersion = "1.68"
   val PureConfigVersion = "0.17.0"
   val KantanCsvVersion = "0.6.1"
+  val ApacheCommonsCodecVersion = "1.16.0"
 }
