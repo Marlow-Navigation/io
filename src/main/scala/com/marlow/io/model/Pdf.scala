@@ -8,7 +8,7 @@ import com.itextpdf.kernel.pdf.{PdfDocument, PdfPage}
 import com.itextpdf.layout.Canvas
 import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.property.TextAlignment
-import com.marlow.io.utils.PdfUtils
+import com.marlow.io.utils.{PdfUtils, StringUtils}
 import com.itextpdf.layout.borders.{DoubleBorder, SolidBorder, Border => ItextBorder}
 
 sealed trait Orientation {
@@ -60,12 +60,12 @@ sealed trait PageHF extends IEventHandler {
   def height: Option[Int] = None
   def yRotationOffset(pageSize: Rectangle, paragraph: Paragraph): Float
 
-  def xRotationOffset(pageSize: Rectangle, paragraph: Paragraph): Float = horizontalAlignment match {
-    case TextAlignment.LEFT => 0
-    case TextAlignment.RIGHT => pageSize.getWidth
-    case TextAlignment.CENTER => pageSize.getWidth / 2
-  }
-
+  def xRotationOffset(pageSize: Rectangle, paragraph: Paragraph): Float =
+    horizontalAlignment match {
+      case TextAlignment.LEFT   => 0
+      case TextAlignment.RIGHT  => pageSize.getWidth
+      case TextAlignment.CENTER => pageSize.getWidth / 2
+    }
 
   def canvas(pdf: PdfDocument, page: PdfPage, paragraph: Paragraph): Canvas = {
     val pdfCanvas = new PdfCanvas(page.getLastContentStream, page.getResources, pdf)
@@ -177,6 +177,7 @@ sealed trait CellDetails {
   def text: String
   def alignment: TextAlignment
   def html: Boolean
+  def image: Boolean
   def colspan: Int
   def rowspan: Int
   def cellType: CellType
@@ -197,6 +198,7 @@ object ColumnDetails {
   def apply(name: String): ColumnDetails = new ColumnDetails(
     text = name,
     html = false,
+    image = false,
     width = 1
   )
 }
@@ -206,6 +208,7 @@ case class ColumnDetails(
     alignment: TextAlignment = TextAlignment.LEFT,
     htmlAlignment: HtmlTextAlignment = Justify,
     html: Boolean,
+    image: Boolean,
     colspan: Int = 1,
     rowspan: Int = 1,
     width: Float
@@ -214,7 +217,8 @@ case class ColumnDetails(
 }
 
 case object CellProperties {
-  def apply(text: String): CellProperties = CellProperties(text = text, html = false)
+  def apply(text: String): CellProperties =
+    CellProperties(text = text, html = false, image = StringUtils.isBase64(Some(text)))
 }
 
 case class CellRaw(name: String, value: String)
@@ -224,6 +228,7 @@ case class CellProperties(
     alignment: TextAlignment = TextAlignment.LEFT,
     htmlAlignment: HtmlTextAlignment = Justify,
     html: Boolean,
+    image: Boolean,
     colspan: Int = 0,
     rowspan: Int = 0
 ) extends CellDetails {

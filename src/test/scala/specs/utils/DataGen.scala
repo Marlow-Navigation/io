@@ -1,10 +1,19 @@
 package specs.utils
 
 import java.util.UUID
+import scala.io.Source
 
-case class Person(id: UUID, name: String, surname: String, dob: String, balance: BigDecimal)
+case class Person(
+    id: UUID,
+    name: String,
+    surname: String,
+    dob: String,
+    balance: BigDecimal,
+    profilePic: String
+)
 
 object DataGen {
+  def base64Image: String = Source.fromResource("base64_sampleimage.txt").getLines.mkString
   private val surname: String =
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et " +
       "dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex " +
@@ -22,7 +31,8 @@ object DataGen {
         name,
         surname,
         "Fri Jul 09 07:51:28 EEST 2021",
-        1111111111.111
+        1111111111.111,
+        base64Image
       )
     )
   }

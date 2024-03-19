@@ -1,9 +1,11 @@
 package com.marlow.io.utils
 
 import com.itextpdf.html2pdf.{ConverterProperties, HtmlConverter}
+import com.itextpdf.io.image.ImageDataFactory
 import com.itextpdf.kernel.colors.DeviceGray
 import com.itextpdf.kernel.events.{Event, PdfDocumentEvent}
 import com.itextpdf.kernel.font.{PdfFont, PdfFontFactory}
+import com.itextpdf.kernel.pdf.xobject.PdfImageXObject
 import com.itextpdf.kernel.pdf.{PdfDocument, PdfPage, PdfReader, PdfWriter}
 import com.itextpdf.layout.Document
 import com.itextpdf.layout.borders.{Border => ItextBorder}
@@ -67,6 +69,17 @@ object PdfUtils extends Loggie {
           .forEach((element: IElement) => {
             cell.add(element.asInstanceOf[IBlockElement])
           })
+      } else if (cellDetails.image) {
+        import org.apache.commons.codec.binary.{Base64 => ApacheBase64}
+        StringUtils.isEmpty(cellDetails.text) match {
+          case true => cell.add(new Paragraph(cellDetails.text))
+          case false =>
+            val imageContents = ApacheBase64.decodeBase64(cellDetails.text)
+            val xObject = new PdfImageXObject(ImageDataFactory.create(imageContents))
+            val image = new Image(xObject).setAutoScale(true)
+            xObject.flush()
+            cell.add(image)
+        }
       } else {
         cell.add(new Paragraph(cellDetails.text))
       }

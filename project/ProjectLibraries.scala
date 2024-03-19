@@ -27,7 +27,8 @@ object ProjectLibraries {
       Slf4jSimple,
       KantanCsvGeneric,
       KantanCsvRefined,
-      KantanCsvEnumeratum
+      KantanCsvEnumeratum,
+      ApacheCommonsCodec
     ) ++ testkit
   }
 
@@ -53,6 +54,8 @@ object ProjectLibraries {
     val KantanCsvGeneric = "com.nrinaudo" %% "kantan.csv-generic" % KantanCsvVersion
     val KantanCsvRefined = "com.nrinaudo" %% "kantan.csv-refined" % KantanCsvVersion
     val KantanCsvEnumeratum = "com.nrinaudo" %% "kantan.csv-enumeratum" % KantanCsvVersion
+    val ApacheCommonsCodec = "commons-codec" % "commons-codec" % ApacheCommonsCodecVersion
+
   }
 
   object TestLibraries {
