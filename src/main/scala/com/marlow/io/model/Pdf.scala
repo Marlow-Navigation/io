@@ -218,7 +218,7 @@ case class ColumnDetails(
 
 case object CellProperties {
   def apply(text: String): CellProperties =
-    CellProperties(text = text, html = false, image = StringUtils.isBase64(Some(text)))
+    CellProperties(text = text, html = false, image = StringUtils.isImageUrl(Some(text)))
 }
 
 case class CellRaw(name: String, value: String)

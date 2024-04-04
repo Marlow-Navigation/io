@@ -71,14 +71,16 @@ object PdfUtils extends Loggie {
           })
       } else if (cellDetails.image) {
         import org.apache.commons.codec.binary.{Base64 => ApacheBase64}
-        StringUtils.isEmpty(cellDetails.text) match {
-          case true => cell.add(new Paragraph(cellDetails.text))
-          case false =>
+        if (StringUtils.isEmpty(cellDetails.text)) {
+          cell.add(new Paragraph(cellDetails.text))
+        } else {
+          Try {
             val imageContents = ApacheBase64.decodeBase64(cellDetails.text)
             val xObject = new PdfImageXObject(ImageDataFactory.create(imageContents))
             val image = new Image(xObject).setAutoScale(true)
             xObject.flush()
             cell.add(image)
+          }.getOrElse(cell.add(new Paragraph(cellDetails.text)))
         }
       } else {
         cell.add(new Paragraph(cellDetails.text))
