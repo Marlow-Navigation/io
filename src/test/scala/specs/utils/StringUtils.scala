@@ -5,6 +5,18 @@ import org.specs2.mutable.Specification
 
 class StringUtils extends Specification {
 
+  "isImageUrl" in {
+    "returns correct results for image url strings" in {
+      isImageUrl(None) mustEqual false
+      isImageUrl(
+        Some("test")
+      ) mustEqual false
+      isImageUrl(Some("MTIzNDU2fG5hbWV8ZW1haWxAdGVzdC5jb218bGV2ZWwxX3JvbGU=")) mustEqual false
+      isImageUrl(Some("data:image/png;base64,MTIzNDU2fG5hbWV8ZW1haWxAdGVzdC5jb218bGV2ZWwxX3JvbGU=")) mustEqual true
+      isImageUrl(Some("data:application/pdf;base64,1123123123123123123123123123123123123123123")) mustEqual false
+    }
+  }
+
   "isBase64" in {
     "returns correct results for base64 strings" in {
       isBase64(None) mustEqual false
