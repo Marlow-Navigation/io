@@ -217,8 +217,13 @@ case class ColumnDetails(
 }
 
 case object CellProperties {
-  def apply(text: String): CellProperties =
-    CellProperties(text = text, html = false, image = StringUtils.isImageUrl(Some(text)))
+  def apply(text: String): CellProperties = {
+    val (isImage, cellContent) = StringUtils.isImageUrl(Some(text)) match {
+      case true  => (true, StringUtils.imageUrl(Some(text)))
+      case false => (false, text)
+    }
+    CellProperties(text = cellContent, html = false, image = isImage)
+  }
 }
 
 case class CellRaw(name: String, value: String)

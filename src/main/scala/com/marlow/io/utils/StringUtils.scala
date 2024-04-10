@@ -6,6 +6,9 @@ import java.util.regex.Pattern
 import scala.util.Try
 
 object StringUtils {
+  def imageUrl(maybeImageUrl: Option[String]): String =
+    maybeImageUrl.flatMap { imgUrl => Try(imgUrl.split(",")(1)).toOption }.getOrElse("")
+
   def isImageUrl(maybeImageUrl: Option[String]): Boolean = {
     maybeImageUrl.fold(false)(imgUrl => {
       isEmpty(imgUrl) match {

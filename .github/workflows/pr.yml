@@ -1,0 +1,35 @@
+name: PR CI
+
+on:
+  pull_request:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+
+  build:
+    runs-on: sbt-run
+
+    steps:
+      - name: sync owner
+        run: sudo chown github:github -R .*
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          token: ${{ secrets.GH_SECRET }}
+          fetch-depth: 0
+      - name: Unit tests
+        shell: bash
+        run: sbt -Dsbt.log.noformat=true -v "; test;"
+        env:
+          NEXUS_USER: ${{ secrets.NEXUS_USER }}
+          NEXUS_PASS: ${{ secrets.NEXUS_PASS }}
+          NEXUS_REPO: ${{ secrets.NEXUS_REPO }}

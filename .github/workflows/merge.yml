@@ -1,0 +1,34 @@
+name: Merge CI
+
+on:
+  push:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+permissions: write-all
+
+jobs:
+
+  build:
+    runs-on: sbt-run
+
+    steps:
+      - name: sync owner
+        run: sudo chown github:github -R .*
+      - run: |
+          rm -rf /work/io/io/*
+          mkdir -p /work/io/io
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          ref: "master"
+          token: ${{ secrets.GH_SECRET }}
+          fetch-depth: 0
+      - name: Unit tests
+        shell: bash
+        run: sbt -Dsbt.log.noformat=true -v "; test;"
+        env:
+          NEXUS_USER: ${{ secrets.NEXUS_USER }}
+          NEXUS_PASS: ${{ secrets.NEXUS_PASS }}
+          NEXUS_REPO: ${{ secrets.NEXUS_REPO }}
+

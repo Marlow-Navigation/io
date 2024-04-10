@@ -3,6 +3,8 @@ package specs.utils
 import com.marlow.io.utils.StringUtils._
 import org.specs2.mutable.Specification
 
+import scala.io.Source
+
 class StringUtils extends Specification {
 
   "isImageUrl" in {
@@ -14,6 +16,16 @@ class StringUtils extends Specification {
       isImageUrl(Some("MTIzNDU2fG5hbWV8ZW1haWxAdGVzdC5jb218bGV2ZWwxX3JvbGU=")) mustEqual false
       isImageUrl(Some("data:image/png;base64,MTIzNDU2fG5hbWV8ZW1haWxAdGVzdC5jb218bGV2ZWwxX3JvbGU=")) mustEqual true
       isImageUrl(Some("data:application/pdf;base64,1123123123123123123123123123123123123123123")) mustEqual false
+      isImageUrl(Some("data:application/pdf;base64,1123123123123123123123123123123123123123123")) mustEqual false
+      isImageUrl(
+        Some(
+          Source
+            .fromResource("base64_specialchars.txt")
+            .getLines
+            .mkString
+            .replaceAll("\\\\r\\\\n", "")
+        )
+      ) mustEqual true
     }
   }
 
