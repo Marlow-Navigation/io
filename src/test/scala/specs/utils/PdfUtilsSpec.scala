@@ -50,7 +50,7 @@ class PdfUtilsSpec extends Specification {
           TextAlignment.LEFT,
           Justify,
           false,
-          false,
+          Unknown,
           0,
           0
         ),
@@ -59,13 +59,13 @@ class PdfUtilsSpec extends Specification {
           TextAlignment.LEFT,
           Justify,
           false,
-          false,
+          Unknown,
           0,
           0
         )
       )
       PdfUtils.extractCells(Seq(person), Seq("name")) mustEqual List(
-        CellProperties("M", TextAlignment.LEFT, Justify, false, false, 0, 0)
+        CellProperties("M", TextAlignment.LEFT, Justify, false, Unknown, 0, 0)
       )
     }
     "extractColumns from provide type" in {
@@ -82,7 +82,7 @@ class PdfUtilsSpec extends Specification {
         "NAME"
       )
       PdfUtils.extractColumns[Person](Seq("name")) mustEqual List(
-        ColumnDetails("NAME", TextAlignment.LEFT, Justify, false, false, 1, 1, 1.0f)
+        ColumnDetails("NAME", TextAlignment.LEFT, Justify, false, Unknown, 1, 1, 1.0f)
       )
     }
     "override columns only when non empty string" in {
@@ -96,12 +96,12 @@ class PdfUtilsSpec extends Specification {
         )
 
       pdfReportPerson.details.head.columns mustEqual List(
-        ColumnDetails("Person ID", TextAlignment.LEFT, Justify, false, false, 1, 1, 1.0f),
-        ColumnDetails("Name", TextAlignment.LEFT, Justify, false, false, 1, 1, 1.0f),
-        ColumnDetails("SURNAME", TextAlignment.LEFT, Justify, false, false, 1, 1, 1.0f),
-        ColumnDetails("DOB", TextAlignment.LEFT, Justify, false, false, 1, 1, 1.0f),
-        ColumnDetails("BALANCE", TextAlignment.LEFT, Justify, false, false, 1, 1, 1.0f),
-        ColumnDetails("PROFILE PIC", TextAlignment.LEFT, Justify, false, false, 1, 1, 1.0f)
+        ColumnDetails("Person ID", TextAlignment.LEFT, Justify, false, Unknown, 1, 1, 1.0f),
+        ColumnDetails("Name", TextAlignment.LEFT, Justify, false, Unknown, 1, 1, 1.0f),
+        ColumnDetails("SURNAME", TextAlignment.LEFT, Justify, false, Unknown, 1, 1, 1.0f),
+        ColumnDetails("DOB", TextAlignment.LEFT, Justify, false, Unknown, 1, 1, 1.0f),
+        ColumnDetails("BALANCE", TextAlignment.LEFT, Justify, false, Unknown, 1, 1, 1.0f),
+        ColumnDetails("PROFILE PIC", TextAlignment.LEFT, Justify, false, Unknown, 1, 1, 1.0f)
       )
     }
     "generate a pdf report from data" in {

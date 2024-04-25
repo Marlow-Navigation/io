@@ -22,6 +22,7 @@ object ProjectLibraries {
       ItextpdfHtml2pdf,
       ItextpdfForms,
       ItextpdfSvg,
+      PdfBox,
       PureConfig,
       Slf4jApi,
       Slf4jSimple,
@@ -42,6 +43,7 @@ object ProjectLibraries {
     val ItextpdfHtml2pdf = "com.itextpdf" % "html2pdf" % ItextpdfHtml2pdfVersion
     val ItextpdfForms = "com.itextpdf" % "forms" % ItextpdfFormsVersion
     val ItextpdfSvg = "com.itextpdf" % "svg" % ItextpdfSvgVersion
+    val PdfBox = "org.apache.pdfbox" % "pdfbox" % PdfBoxVersion
     val JacksonCore = "com.fasterxml.jackson.core" % "jackson-core" % JacksonCoreVersion
     val JacksonAnnotations =
       "com.fasterxml.jackson.core" % "jackson-annotations" % JacksonAnnotationsVersion

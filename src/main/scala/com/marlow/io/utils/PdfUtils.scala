@@ -14,12 +14,16 @@ import com.itextpdf.layout.property.{TextAlignment, UnitValue, VerticalAlignment
 import com.marlow.io.config.IOConfig
 import com.marlow.io.misc.Loggie
 import com.marlow.io.model._
+import org.apache.pdfbox.Loader
+import org.apache.pdfbox.rendering.PDFRenderer
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
 
+import java.awt.image.BufferedImage
 import scala.reflect.runtime.{universe => ru}
 import ru._
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
+import javax.imageio.ImageIO
 import scala.util.{Failure, Success, Try}
 
 object PdfUtils extends Loggie {
@@ -69,18 +73,37 @@ object PdfUtils extends Loggie {
           .forEach((element: IElement) => {
             cell.add(element.asInstanceOf[IBlockElement])
           })
-      } else if (cellDetails.image) {
+      } else if (cellDetails.mediaType.compatible && !StringUtils.isEmpty(cellDetails.text)) {
         import org.apache.commons.codec.binary.{Base64 => ApacheBase64}
-        if (StringUtils.isEmpty(cellDetails.text)) {
-          cell.add(new Paragraph(cellDetails.text))
+        if (cellDetails.mediaType.isPdf) {
+          import scala.jdk.CollectionConverters._
+
+          val pdfContent = ApacheBase64.decodeBase64(cellDetails.text)
+          val baos: ByteArrayOutputStream = new ByteArrayOutputStream()
+          val document = Loader.loadPDF(pdfContent)
+          val pages = document.getPages().iterator().asScala
+          val pdfRenderer = new PDFRenderer(document)
+
+          pages.zipWithIndex.foreach { pageWithIndex =>
+            val (_, index) = pageWithIndex
+            val bim: BufferedImage = pdfRenderer.renderImage(index)
+            ImageIO.write(bim, "PNG", baos);
+          }
+          document.close();
+          baos.flush()
+          baos.close()
+          val xObject = new PdfImageXObject(ImageDataFactory.create(baos.toByteArray))
+          val image = new Image(xObject).setAutoScale(true)
+          xObject.flush()
+          cell.add(image)
+        } else if (cellDetails.mediaType.isImage) {
+          val imageContents = ApacheBase64.decodeBase64(cellDetails.text)
+          val xObject = new PdfImageXObject(ImageDataFactory.create(imageContents))
+          val image = new Image(xObject).setAutoScale(true)
+          xObject.flush()
+          cell.add(image)
         } else {
-          Try {
-            val imageContents = ApacheBase64.decodeBase64(cellDetails.text)
-            val xObject = new PdfImageXObject(ImageDataFactory.create(imageContents))
-            val image = new Image(xObject).setAutoScale(true)
-            xObject.flush()
-            cell.add(image)
-          }.getOrElse(cell.add(new Paragraph(cellDetails.text)))
+          cell.add(new Paragraph(cellDetails.text))
         }
       } else {
         cell.add(new Paragraph(cellDetails.text))

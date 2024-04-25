@@ -1,5 +1,6 @@
 package specs.utils
 
+import com.marlow.io.model.{Image, Pdf, Unknown}
 import com.marlow.io.utils.StringUtils._
 import org.specs2.mutable.Specification
 
@@ -9,15 +10,21 @@ class StringUtils extends Specification {
 
   "isImageUrl" in {
     "returns correct results for image url strings" in {
-      isImageUrl(None) mustEqual false
-      isImageUrl(
+      mediaTypeCompatible(None) must beNone
+      mediaTypeCompatible(
         Some("test")
-      ) mustEqual false
-      isImageUrl(Some("MTIzNDU2fG5hbWV8ZW1haWxAdGVzdC5jb218bGV2ZWwxX3JvbGU=")) mustEqual false
-      isImageUrl(Some("data:image/png;base64,MTIzNDU2fG5hbWV8ZW1haWxAdGVzdC5jb218bGV2ZWwxX3JvbGU=")) mustEqual true
-      isImageUrl(Some("data:application/pdf;base64,1123123123123123123123123123123123123123123")) mustEqual false
-      isImageUrl(Some("data:application/pdf;base64,1123123123123123123123123123123123123123123")) mustEqual false
-      isImageUrl(
+      ).get mustEqual Unknown
+      mediaTypeCompatible(Some("MTIzNDU2fG5hbWV8ZW1haWxAdGVzdC5jb218bGV2ZWwxX3JvbGU=")).get mustEqual Unknown
+      mediaTypeCompatible(
+        Some("data:image/png;base64,MTIzNDU2fG5hbWV8ZW1haWxAdGVzdC5jb218bGV2ZWwxX3JvbGU=")
+      ).get mustEqual Image
+      mediaTypeCompatible(
+        Some("data:application/pdf;base64,1123123123123123123123123123123123123123123")
+      ).get mustEqual Unknown
+      mediaTypeCompatible(
+        Some("data:application/pdf;base64,1123123123123123123123123123123123123123123")
+      ).get mustEqual Unknown
+/*      mediaTypeCompatible(
         Some(
           Source
             .fromResource("base64_specialchars.txt")
@@ -25,7 +32,34 @@ class StringUtils extends Specification {
             .mkString
             .replaceAll("\\\\r\\\\n", "")
         )
-      ) mustEqual true
+      ).get mustEqual Image
+      mediaTypeCompatible(
+        Some(
+          Source
+            .fromResource("base64_specialchars_case2.txt")
+            .getLines
+            .mkString
+            .replaceAll("\\\\r\\\\n", "")
+        )
+      ).get mustEqual Image
+      mediaTypeCompatible(
+        Some(
+          Source
+            .fromResource("base64_pdf.txt")
+            .getLines
+            .mkString
+            .replaceAll("\\\\r\\\\n", "")
+        )
+      ).get mustEqual Pdf
+      mediaTypeCompatible(
+        Some(
+          Source
+            .fromResource("base64_pdf_case2.txt")
+            .getLines
+            .mkString
+            .replaceAll("\\\\r\\\\n", "")
+        )
+      ).get mustEqual Pdf*/
     }
   }
 

@@ -10,6 +10,7 @@ object ProjectLibraryVersions {
   val ItextpdfHtml2pdfVersion = "3.0.4"
   val ItextpdfFormsVersion = "7.1.15"
   val ItextpdfSvgVersion = "7.1.15"
+  val PdfBoxVersion = "3.0.2"
   val JacksonCoreVersion = "2.12.3"
   val JacksonAnnotationsVersion = "2.12.3"
   val JacksonDatabindVersion = "2.12.3"

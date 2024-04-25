@@ -44,10 +44,10 @@ object CommonSettingsDefinition {
       updateOptions := updateOptions.value.withGigahorse(false),
       publishConfiguration := publishConfiguration.value.withOverwrite(true),
       publishLocalConfiguration := publishLocalConfiguration.value.withOverwrite(true),
-      publishArtifact in (Compile, packageDoc) := false,
-      publishArtifact in (Test, packageDoc) := false,
+      Compile / packageDoc / publishArtifact := false,
+      Test / packageDoc / publishArtifact := false,
       Test / publishArtifact := false,
-      skip in (Test, publish) := true,
+      Test / publish / skip := true,
       organization := organisationString,
       scalaVersion := scalaVersionString,
       crossPaths := false,
@@ -64,7 +64,7 @@ object CommonSettingsDefinition {
         "-Ywarn-unused:imports",
         "-language:implicitConversions"
       ),
-      scalacOptions in Test ~= { (options: Seq[String]) =>
+      Test / scalacOptions ~= { (options: Seq[String]) =>
         options filterNot (_ == "-Ywarn-dead-code") // Allow dead code in tests (to support using mockito).
       }
     )

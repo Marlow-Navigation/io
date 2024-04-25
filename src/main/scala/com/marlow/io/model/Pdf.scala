@@ -11,6 +11,23 @@ import com.itextpdf.layout.property.TextAlignment
 import com.marlow.io.utils.{PdfUtils, StringUtils}
 import com.itextpdf.layout.borders.{DoubleBorder, SolidBorder, Border => ItextBorder}
 
+trait MediaType {
+  val compatible: Boolean
+  def isImage: Boolean = false
+  def isPdf: Boolean = false
+}
+case object Pdf extends MediaType {
+  override val compatible: Boolean = true
+  override def isPdf: Boolean = true
+}
+case object Image extends MediaType {
+  override val compatible: Boolean = true
+  override def isImage: Boolean = true
+}
+case object Unknown extends MediaType {
+  override val compatible: Boolean = false
+}
+
 sealed trait Orientation {
   def value: String = this.toString.toLowerCase
 }
@@ -177,7 +194,7 @@ sealed trait CellDetails {
   def text: String
   def alignment: TextAlignment
   def html: Boolean
-  def image: Boolean
+  def mediaType: MediaType
   def colspan: Int
   def rowspan: Int
   def cellType: CellType
@@ -198,7 +215,7 @@ object ColumnDetails {
   def apply(name: String): ColumnDetails = new ColumnDetails(
     text = name,
     html = false,
-    image = false,
+    mediaType = Unknown,
     width = 1
   )
 }
@@ -208,7 +225,7 @@ case class ColumnDetails(
     alignment: TextAlignment = TextAlignment.LEFT,
     htmlAlignment: HtmlTextAlignment = Justify,
     html: Boolean,
-    image: Boolean,
+    mediaType: MediaType,
     colspan: Int = 1,
     rowspan: Int = 1,
     width: Float
@@ -218,11 +235,13 @@ case class ColumnDetails(
 
 case object CellProperties {
   def apply(text: String): CellProperties = {
-    val (isImage, cellContent) = StringUtils.isImageUrl(Some(text)) match {
-      case true  => (true, StringUtils.imageUrl(Some(text)))
-      case false => (false, text)
+    val (mediaType, cellContent) = StringUtils.mediaTypeCompatible(Some(text)) match {
+      case Some(Unknown) => (Unknown, text)
+      case Some(mediaT)  => (mediaT, StringUtils.imagePdfContent(Some(text)))
+      case None          => (Unknown, text)
     }
-    CellProperties(text = cellContent, html = false, image = isImage)
+
+    CellProperties(text = cellContent, html = false, mediaType = mediaType)
   }
 }
 
@@ -233,7 +252,7 @@ case class CellProperties(
     alignment: TextAlignment = TextAlignment.LEFT,
     htmlAlignment: HtmlTextAlignment = Justify,
     html: Boolean,
-    image: Boolean,
+    mediaType: MediaType,
     colspan: Int = 0,
     rowspan: Int = 0
 ) extends CellDetails {
