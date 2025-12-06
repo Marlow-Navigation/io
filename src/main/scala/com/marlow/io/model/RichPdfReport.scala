@@ -6,11 +6,11 @@ import com.itextpdf.layout.property.{AreaBreakType, TextAlignment, UnitValue}
 import com.marlow.io.utils.PdfUtils.{DefaultTableHeaderBgColor, DefaultTableRowBgColor}
 
 case class RichPdfReport(
-    pageProperties: PageProperties,
+    override val pageProperties: PageProperties,
     details: Seq[PdfElement],
-    header: Option[Header],
-    footer: Option[Footer]
-)
+    override val header: Option[Header],
+    override val footer: Option[Footer]
+) extends GenericPdfReport
 
 trait PdfElement {
   def add(doc: Document, pageProperties: PageProperties): Document

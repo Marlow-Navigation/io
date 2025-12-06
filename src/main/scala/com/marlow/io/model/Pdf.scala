@@ -6,11 +6,10 @@ import com.itextpdf.kernel.font.{PdfFont, PdfFontFactory}
 import com.itextpdf.kernel.geom.{PageSize, Rectangle}
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas
 import com.itextpdf.kernel.pdf.{PdfDocument, PdfPage}
+import com.itextpdf.layout.Canvas
 import com.itextpdf.layout.borders.{DoubleBorder, SolidBorder, Border => ItextBorder}
-import com.itextpdf.layout.element.{Paragraph, Table}
+import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.property.TextAlignment
-import com.itextpdf.layout.{Canvas, Document}
-import com.marlow.io.utils.PdfUtils.{addCellDetails, prepareTable}
 import com.marlow.io.utils.{PdfUtils, StringUtils}
 
 trait MediaType {
@@ -44,6 +43,11 @@ case object Center extends HtmlTextAlignment
 case object Right extends HtmlTextAlignment
 case object Justify extends HtmlTextAlignment
 
+trait GenericPdfReport {
+  val pageProperties: PageProperties
+  val header: Option[Header]
+  val footer: Option[Footer]
+}
 case class PageProperties(
     pageSize: PageSize,
     orientation: Orientation,
@@ -183,17 +187,7 @@ case class TableDetails(
     cells: Seq[CellProperties],
     maxSpanColumn: Seq[Int] = Seq(),
     sumForColumn: Seq[Int] = Seq()
-) extends PdfElement {
-
-  override def add(doc: Document, pageProperties: PageProperties): Document = {
-    if (columns.isEmpty)
-      throw new Exception("The provided table has no columns")
-    val table: Table = prepareTable(this)
-    val tableSumColumns = addCellDetails(this, table, pageProperties)
-    doc.add(table)
-
-  }
-
+) {
   def addSumTotalBorder: TableDetails =
     this.copy(border = BorderStyle(TotalCell))
 }
@@ -282,29 +276,9 @@ object PdfReport {
   def apply[T: TypeTag: reflect.ClassTag](
       data: Seq[Seq[T]],
       headerContent: String,
-      footerContent: String
-  ): PdfReport = PdfReport(data, headerContent, footerContent, Seq(), None)
-
-  def apply[T: TypeTag: reflect.ClassTag](
-      data: Seq[Seq[T]],
-      headerContent: String,
       footerContent: String,
-      sumTotalColumn: Seq[Int]
-  ): PdfReport = PdfReport(data, headerContent, footerContent, sumTotalColumn, None)
-
-  def apply[T: TypeTag: reflect.ClassTag](
-      data: Seq[Seq[T]],
-      headerContent: String,
-      footerContent: String,
-      columnOverrides: Option[Seq[String]]
-  ): PdfReport = PdfReport(data, headerContent, footerContent, Seq(), columnOverrides)
-
-  def apply[T: TypeTag: reflect.ClassTag](
-      data: Seq[Seq[T]],
-      headerContent: String,
-      footerContent: String,
-      sumTotalColumn: Seq[Int],
-      columnOverrides: Option[Seq[String]]
+      sumTotalColumn: Seq[Int] = Seq(),
+      columnOverrides: Option[Seq[String]] = None
   ): PdfReport = {
     val pageProperties = PageProperties(
       pageSize = PageSize.A4,
@@ -351,12 +325,11 @@ object PdfReport {
 }
 
 case class PdfReport(
-    pageProperties: PageProperties,
+    override val pageProperties: PageProperties,
     details: Seq[TableDetails],
-    header: Option[Header],
-    footer: Option[Footer],
-    pageBreakAfterTable: Boolean = false
-) {
+    override val header: Option[Header],
+    override val footer: Option[Footer]
+) extends GenericPdfReport {
   def isMultiTableReport: Boolean = details.size > 1
 
   def withFooter(text: String, html: Boolean = false): PdfReport =
