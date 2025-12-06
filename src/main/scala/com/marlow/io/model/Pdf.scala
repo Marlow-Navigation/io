@@ -6,7 +6,7 @@ import com.itextpdf.kernel.font.{PdfFont, PdfFontFactory}
 import com.itextpdf.kernel.geom.{PageSize, Rectangle}
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas
 import com.itextpdf.kernel.pdf.{PdfDocument, PdfPage}
-import com.itextpdf.layout.Canvas
+import com.itextpdf.layout.{Canvas, Document}
 import com.itextpdf.layout.borders.{DoubleBorder, SolidBorder, Border => ItextBorder}
 import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.property.TextAlignment
@@ -47,6 +47,8 @@ trait GenericPdfReport {
   val pageProperties: PageProperties
   val header: Option[Header]
   val footer: Option[Footer]
+
+  def generate(doc: Document): Unit = ???
 }
 case class PageProperties(
     pageSize: PageSize,

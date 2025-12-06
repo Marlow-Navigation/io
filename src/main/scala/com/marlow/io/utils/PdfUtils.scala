@@ -225,6 +225,77 @@ object PdfUtils extends Loggie {
     table.setKeepWithNext(tableDetails.keepWithNext)
   }
 
+  def withDocument(
+      genericPdf: GenericPdfReport
+  )(generatePdf: (GenericPdfReport, Document) => Unit): Unit = {
+    val outputStream = new ByteArrayOutputStream()
+    val tempBAOS = new ByteArrayOutputStream()
+    val pdfWriter = new PdfWriter(tempBAOS)
+    val pdfDoc = new PdfDocument(pdfWriter)
+    val doc = new Document(
+      pdfDoc,
+      genericPdf.pageProperties.pageSizeWithOrientation,
+      true
+    )
+
+    Try {
+      doc.setMargins(
+        config.defaultMarginTop,
+        config.defaultMarginRight,
+        config.defaultMarginBottom,
+        config.defaultMarginLeft
+      )
+
+      genericPdf.header.foreach(h => pdfDoc.addEventHandler(PdfDocumentEvent.START_PAGE, h))
+      genericPdf.footer.foreach(f => pdfDoc.addEventHandler(PdfDocumentEvent.END_PAGE, f))
+
+      generatePdf(genericPdf, doc)
+
+      doc.close()
+      pdfDoc.close()
+      tempBAOS.close()
+
+      val inputStream = new ByteArrayInputStream(tempBAOS.toByteArray)
+      val pdfDocFinal =
+        new PdfDocument(
+          new PdfReader(inputStream),
+          new PdfWriter(outputStream)
+        )
+      val docFinal = new Document(
+        pdfDocFinal,
+        genericPdf.pageProperties.pageSizeWithOrientation,
+        true
+      )
+      if (genericPdf.pageProperties.pageNumbers) {
+        docFinal.setFontSize(genericPdf.pageProperties.pageNumbersFontSize)
+        val numberOfPages = pdfDocFinal.getNumberOfPages
+        for (pageNo <- 1 to numberOfPages) {
+          docFinal.showTextAligned(
+            new Paragraph(s"Page $pageNo of $numberOfPages"),
+            pdfDocFinal.getPage(pageNo).getPageSize.getWidth - docFinal.getBottomMargin,
+            0,
+            pageNo,
+            TextAlignment.CENTER,
+            VerticalAlignment.BOTTOM,
+            0
+          )
+        }
+      }
+
+      Seq(docFinal, pdfDocFinal, doc, pdfDoc, tempBAOS, outputStream).foreach(c => Try(c.close()))
+      Try {
+        outputStream.flush()
+      }
+    } match {
+      case Failure(exception) =>
+        logger.error(exception.getMessage, exception)
+        throw exception
+      case Success(_) =>
+        logger.info("Done")
+        outputStream.toByteArray
+    }
+  }
+
   def generate(
       pdfReport: RichPdfReport
   ): Array[Byte] = {
