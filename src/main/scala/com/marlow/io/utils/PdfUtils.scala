@@ -28,8 +28,8 @@ import scala.util.{Failure, Success, Try}
 
 object PdfUtils extends Loggie {
   private val config: IOConfig = ConfigSource.default.loadOrThrow[IOConfig]
-  private val DefaultTableHeaderBgColor = new DeviceGray(config.tableHeaderBgColor)
-  private val DefaultTableRowBgColor = new DeviceGray(config.tableRowBgColor)
+  val DefaultTableHeaderBgColor = new DeviceGray(config.tableHeaderBgColor)
+  val DefaultTableRowBgColor = new DeviceGray(config.tableRowBgColor)
 
   def addCell(
       tDetails: TableDetails,
@@ -169,7 +169,7 @@ object PdfUtils extends Loggie {
       tableDetails: TableDetails,
       sumColumn: ColumnSum,
       table: Table,
-      pdfReport: PdfReport
+      pageProperties: PageProperties
   ): Unit = {
     val tableRow: TableDetails =
       tableDetails
@@ -187,9 +187,9 @@ object PdfUtils extends Loggie {
         tableRow.copy(cells = rowCells),
         table,
         (cell, sumColumn.column - 1),
-        pdfReport.pageProperties.font,
-        pdfReport.pageProperties.fontBold,
-        pdfReport.pageProperties.fontSize
+        pageProperties.font,
+        pageProperties.fontBold,
+        pageProperties.fontSize
       )
     }
   }
@@ -197,7 +197,7 @@ object PdfUtils extends Loggie {
   def addCellDetails(
       tableDetails: TableDetails,
       table: Table,
-      pdfReport: PdfReport
+      pageProperties: PageProperties
   ): Seq[ColumnSum] = {
     def cells: Seq[CellDetails] = tableDetails.columns ++ tableDetails.cells
     val tableSumColumns: Seq[ColumnSum] = cells.zipWithIndex.foldLeft(Seq[ColumnSum]()) {
@@ -206,15 +206,15 @@ object PdfUtils extends Loggie {
           tableDetails,
           table,
           cellWithIndex,
-          pdfReport.pageProperties.font,
-          pdfReport.pageProperties.fontBold,
-          pdfReport.pageProperties.fontSize
+          pageProperties.font,
+          pageProperties.fontBold,
+          pageProperties.fontSize
         ).fold(agg)(cs => agg :+ cs)
     }
     tableSumColumns
       .groupBy(_.column)
       .map { x => ColumnSum(x._1, x._2.map(_.sum).sum) }
-      .foreach { sumColumn => addSumCell(tableDetails, sumColumn, table, pdfReport) }
+      .foreach { sumColumn => addSumCell(tableDetails, sumColumn, table, pageProperties) }
     tableSumColumns
   }
 
@@ -223,6 +223,79 @@ object PdfUtils extends Loggie {
     val table: Table = new Table(UnitValue.createPercentArray(colWidths)).useAllAvailableWidth
     table.setKeepTogether(tableDetails.keepTogether)
     table.setKeepWithNext(tableDetails.keepWithNext)
+  }
+
+  def generate(
+      pdfReport: RichPdfReport
+  ): Array[Byte] = {
+    val outputStream = new ByteArrayOutputStream()
+    val tempBAOS = new ByteArrayOutputStream()
+    val pdfWriter = new PdfWriter(tempBAOS)
+    val pdfDoc = new PdfDocument(pdfWriter)
+    val doc = new Document(
+      pdfDoc,
+      pdfReport.pageProperties.pageSizeWithOrientation,
+      true
+    )
+
+    Try {
+      doc.setMargins(
+        config.defaultMarginTop,
+        config.defaultMarginRight,
+        config.defaultMarginBottom,
+        config.defaultMarginLeft
+      )
+
+      pdfReport.header.foreach(h => pdfDoc.addEventHandler(PdfDocumentEvent.START_PAGE, h))
+      pdfReport.footer.foreach(f => pdfDoc.addEventHandler(PdfDocumentEvent.END_PAGE, f))
+
+      pdfReport.details.foldLeft(doc) { (updateDoc, element) =>
+        element.add(updateDoc, pdfReport.pageProperties)
+      }
+
+      doc.close()
+      pdfDoc.close()
+      tempBAOS.close()
+
+      val inputStream = new ByteArrayInputStream(tempBAOS.toByteArray)
+      val pdfDocFinal =
+        new PdfDocument(
+          new PdfReader(inputStream),
+          new PdfWriter(outputStream)
+        )
+      val docFinal = new Document(
+        pdfDocFinal,
+        pdfReport.pageProperties.pageSizeWithOrientation,
+        true
+      )
+      if (pdfReport.pageProperties.pageNumbers) {
+        docFinal.setFontSize(pdfReport.pageProperties.pageNumbersFontSize)
+        val numberOfPages = pdfDocFinal.getNumberOfPages
+        for (pageNo <- 1 to numberOfPages) {
+          docFinal.showTextAligned(
+            new Paragraph(s"Page $pageNo of $numberOfPages"),
+            pdfDocFinal.getPage(pageNo).getPageSize.getWidth - docFinal.getBottomMargin,
+            0,
+            pageNo,
+            TextAlignment.CENTER,
+            VerticalAlignment.BOTTOM,
+            0
+          )
+        }
+      }
+
+      Seq(docFinal, pdfDocFinal, doc, pdfDoc, tempBAOS, outputStream).foreach(c => Try(c.close()))
+      Try {
+        outputStream.flush()
+      }
+    } match {
+      case Failure(exception) =>
+        logger.error(exception.getMessage, exception)
+        throw exception
+      case Success(_) =>
+        logger.info("Done")
+        outputStream.toByteArray
+    }
   }
 
   def generate(
@@ -254,7 +327,7 @@ object PdfUtils extends Loggie {
           if (tableDetails.columns.isEmpty)
             throw new Exception("The provided table has no columns")
           val table: Table = prepareTable(tableDetails)
-          val tableSumColumns = addCellDetails(tableDetails, table, pdfReport)
+          val tableSumColumns = addCellDetails(tableDetails, table, pdfReport.pageProperties)
           doc.add(table)
           agg ++ tableSumColumns
         }
@@ -265,7 +338,7 @@ object PdfUtils extends Loggie {
       if (pdfReport.isMultiTableReport) {
         totalSumColumns.foreach { sumColumn =>
           val table: Table = prepareTable(pdfReport.details.head)
-          addSumCell(pdfReport.details.head, sumColumn, table, pdfReport)
+          addSumCell(pdfReport.details.head, sumColumn, table, pdfReport.pageProperties)
           doc.add(table)
         }
       }
