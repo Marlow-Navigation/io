@@ -227,7 +227,7 @@ object PdfUtils extends Loggie {
 
   def withDocument(
       genericPdf: GenericPdfReport
-  )(generatePdf: (GenericPdfReport, Document) => Unit): Unit = {
+  )(generatePdf: Document => Unit): Array[Byte] = {
     val outputStream = new ByteArrayOutputStream()
     val tempBAOS = new ByteArrayOutputStream()
     val pdfWriter = new PdfWriter(tempBAOS)
@@ -249,7 +249,7 @@ object PdfUtils extends Loggie {
       genericPdf.header.foreach(h => pdfDoc.addEventHandler(PdfDocumentEvent.START_PAGE, h))
       genericPdf.footer.foreach(f => pdfDoc.addEventHandler(PdfDocumentEvent.END_PAGE, f))
 
-      generatePdf(genericPdf, doc)
+      generatePdf(doc)
 
       doc.close()
       pdfDoc.close()
@@ -299,100 +299,17 @@ object PdfUtils extends Loggie {
   def generate(
       pdfReport: RichPdfReport
   ): Array[Byte] = {
-    val outputStream = new ByteArrayOutputStream()
-    val tempBAOS = new ByteArrayOutputStream()
-    val pdfWriter = new PdfWriter(tempBAOS)
-    val pdfDoc = new PdfDocument(pdfWriter)
-    val doc = new Document(
-      pdfDoc,
-      pdfReport.pageProperties.pageSizeWithOrientation,
-      true
-    )
-
-    Try {
-      doc.setMargins(
-        config.defaultMarginTop,
-        config.defaultMarginRight,
-        config.defaultMarginBottom,
-        config.defaultMarginLeft
-      )
-
-      pdfReport.header.foreach(h => pdfDoc.addEventHandler(PdfDocumentEvent.START_PAGE, h))
-      pdfReport.footer.foreach(f => pdfDoc.addEventHandler(PdfDocumentEvent.END_PAGE, f))
-
+    withDocument(pdfReport) { doc =>
       pdfReport.details.foldLeft(doc) { (updateDoc, element) =>
         element.add(updateDoc, pdfReport.pageProperties)
       }
-
-      doc.close()
-      pdfDoc.close()
-      tempBAOS.close()
-
-      val inputStream = new ByteArrayInputStream(tempBAOS.toByteArray)
-      val pdfDocFinal =
-        new PdfDocument(
-          new PdfReader(inputStream),
-          new PdfWriter(outputStream)
-        )
-      val docFinal = new Document(
-        pdfDocFinal,
-        pdfReport.pageProperties.pageSizeWithOrientation,
-        true
-      )
-      if (pdfReport.pageProperties.pageNumbers) {
-        docFinal.setFontSize(pdfReport.pageProperties.pageNumbersFontSize)
-        val numberOfPages = pdfDocFinal.getNumberOfPages
-        for (pageNo <- 1 to numberOfPages) {
-          docFinal.showTextAligned(
-            new Paragraph(s"Page $pageNo of $numberOfPages"),
-            pdfDocFinal.getPage(pageNo).getPageSize.getWidth - docFinal.getBottomMargin,
-            0,
-            pageNo,
-            TextAlignment.CENTER,
-            VerticalAlignment.BOTTOM,
-            0
-          )
-        }
-      }
-
-      Seq(docFinal, pdfDocFinal, doc, pdfDoc, tempBAOS, outputStream).foreach(c => Try(c.close()))
-      Try {
-        outputStream.flush()
-      }
-    } match {
-      case Failure(exception) =>
-        logger.error(exception.getMessage, exception)
-        throw exception
-      case Success(_) =>
-        logger.info("Done")
-        outputStream.toByteArray
     }
   }
 
   def generate(
       pdfReport: PdfReport
   ): Array[Byte] = {
-    val isPortrait = pdfReport.pageProperties.orientation == Portrait
-    val outputStream = new ByteArrayOutputStream()
-    val tempBAOS = new ByteArrayOutputStream()
-    val pdfWriter = new PdfWriter(tempBAOS)
-    val pdfDoc = new PdfDocument(pdfWriter)
-    val doc = new Document(
-      pdfDoc,
-      pdfReport.pageProperties.pageSizeWithOrientation,
-      true
-    )
-
-    Try {
-      doc.setMargins(
-        config.defaultMarginTop,
-        config.defaultMarginRight,
-        config.defaultMarginBottom,
-        config.defaultMarginLeft
-      )
-
-      pdfReport.header.foreach(h => pdfDoc.addEventHandler(PdfDocumentEvent.START_PAGE, h))
-      pdfReport.footer.foreach(f => pdfDoc.addEventHandler(PdfDocumentEvent.END_PAGE, f))
+    withDocument(pdfReport) { doc =>
       val totalSumColumns = pdfReport.details
         .foldLeft(Seq[ColumnSum]()) { (agg, tableDetails) =>
           if (tableDetails.columns.isEmpty)
@@ -413,49 +330,6 @@ object PdfUtils extends Loggie {
           doc.add(table)
         }
       }
-
-      doc.close()
-      pdfDoc.close()
-      tempBAOS.close()
-
-      val inputStream = new ByteArrayInputStream(tempBAOS.toByteArray)
-      val pdfDocFinal =
-        new PdfDocument(
-          new PdfReader(inputStream),
-          new PdfWriter(outputStream)
-        )
-      val docFinal = new Document(
-        pdfDocFinal,
-        pdfReport.pageProperties.pageSizeWithOrientation,
-        true
-      )
-      if (pdfReport.pageProperties.pageNumbers) {
-        docFinal.setFontSize(pdfReport.pageProperties.pageNumbersFontSize)
-        val numberOfPages = pdfDocFinal.getNumberOfPages
-        for (pageNo <- 1 to numberOfPages) {
-          docFinal.showTextAligned(
-            new Paragraph(s"Page $pageNo of $numberOfPages"),
-            pdfDocFinal.getPage(pageNo).getPageSize.getWidth - docFinal.getBottomMargin,
-            0,
-            pageNo,
-            TextAlignment.CENTER,
-            VerticalAlignment.BOTTOM,
-            0
-          )
-        }
-      }
-
-      Seq(docFinal, pdfDocFinal, doc, pdfDoc, tempBAOS, outputStream).foreach(c => Try(c.close()))
-      Try {
-        outputStream.flush()
-      }
-    } match {
-      case Failure(exception) =>
-        logger.error(exception.getMessage, exception)
-        throw exception
-      case Success(_) =>
-        logger.info("Done")
-        outputStream.toByteArray
     }
   }
 
