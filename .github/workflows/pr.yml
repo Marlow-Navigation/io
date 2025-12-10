@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  functions:
+  build:
     runs-on: ["self-hosted", "xlarge"]
 
     steps:
