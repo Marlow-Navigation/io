@@ -13,13 +13,10 @@ permissions:
   contents: read
 
 jobs:
-
   build:
-    runs-on: sbt-run
+    runs-on: ["self-hosted", "xlarge"]
 
     steps:
-      - name: sync owner
-        run: sudo chown github:github -R .*
       - name: Check out code
         uses: actions/checkout@v4
         with:
