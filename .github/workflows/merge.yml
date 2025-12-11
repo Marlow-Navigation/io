@@ -9,14 +9,14 @@ permissions: write-all
 
 jobs:
   build:
-    runs-on: ["self-hosted", "xlarge"]
+    runs-on: "ubuntu-latest"
 
     steps:
       - name: Check out code
         uses: actions/checkout@v4
         with:
           ref: "master"
-          token: ${{ secrets.GH_SECRET }}
+          token: ${{ secrets.GH_TOKEN_PUB }}
           fetch-depth: 0
       - name: Unit tests
         shell: bash
