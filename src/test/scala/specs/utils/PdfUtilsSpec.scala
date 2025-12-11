@@ -7,9 +7,14 @@ import com.marlow.io.utils.PdfUtils
 import org.specs2.mutable.Specification
 import specs.utils.DataGen.base64Image
 
-import java.util.UUID
+import java.nio.charset.Charset
+import java.time.ZoneId
+import java.util.{Locale, TimeZone, UUID}
 
 class PdfUtilsSpec extends Specification {
+
+  TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
+
   val header: Header = Header(
     text =
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n" +
@@ -112,7 +117,7 @@ class PdfUtilsSpec extends Specification {
           .withHeader(header.text)
           .withCellsAlignment(TextAlignment.LEFT)
       val reportArrayBytes: Array[Byte] = PdfUtils.generate(pdfReportPerson)
-      reportArrayBytes.length mustEqual 440620
+      reportArrayBytes.length mustEqual 440608
     }
     "generate a pdf report from data with column overrides" in {
       val personList: Seq[Person] = DataGen.gen(11)
@@ -136,7 +141,7 @@ class PdfUtilsSpec extends Specification {
           .withHeader(header.text)
           .withCellsAlignment(TextAlignment.LEFT)
       val reportArrayBytes: Array[Byte] = PdfUtils.generate(pdfReportPerson)
-      reportArrayBytes.length mustEqual 440629
+      reportArrayBytes.length mustEqual 440617
     }
     "generate a pdf report from data with column span" in {
       val personList: Seq[Person] = DataGen.gen(11)
@@ -162,7 +167,7 @@ class PdfUtilsSpec extends Specification {
           .maxSpanForColumn(1)
 
       val reportArrayBytes: Array[Byte] = PdfUtils.generate(pdfReportPerson)
-      reportArrayBytes.length mustEqual 439150
+      reportArrayBytes.length mustEqual 439138
     }
     "generate a pdf report from data with column sum, multiple tables, column overrides" in {
       val pdfReportPerson =
@@ -188,7 +193,7 @@ class PdfUtilsSpec extends Specification {
           .maxSpanForColumn(1)
 
       val reportArrayBytes: Array[Byte] = PdfUtils.generate(pdfReportPerson)
-      reportArrayBytes.length mustEqual 640524
+      reportArrayBytes.length mustEqual 640512
     }
   }
 }

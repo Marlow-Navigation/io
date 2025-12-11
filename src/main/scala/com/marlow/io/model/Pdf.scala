@@ -1,15 +1,16 @@
 package com.marlow.io.model
 
+import com.itextpdf.kernel.colors.Color
 import com.itextpdf.kernel.events.{Event, IEventHandler}
 import com.itextpdf.kernel.font.{PdfFont, PdfFontFactory}
 import com.itextpdf.kernel.geom.{PageSize, Rectangle}
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas
 import com.itextpdf.kernel.pdf.{PdfDocument, PdfPage}
 import com.itextpdf.layout.Canvas
+import com.itextpdf.layout.borders.{DoubleBorder, SolidBorder, Border => ItextBorder}
 import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.property.TextAlignment
 import com.marlow.io.utils.{PdfUtils, StringUtils}
-import com.itextpdf.layout.borders.{DoubleBorder, SolidBorder, Border => ItextBorder}
 
 trait MediaType {
   val compatible: Boolean
@@ -42,6 +43,11 @@ case object Center extends HtmlTextAlignment
 case object Right extends HtmlTextAlignment
 case object Justify extends HtmlTextAlignment
 
+trait GenericPdfReport {
+  val pageProperties: PageProperties
+  val header: Option[Header]
+  val footer: Option[Footer]
+}
 case class PageProperties(
     pageSize: PageSize,
     orientation: Orientation,
@@ -254,7 +260,9 @@ case class CellProperties(
     html: Boolean,
     mediaType: MediaType,
     colspan: Int = 0,
-    rowspan: Int = 0
+    rowspan: Int = 0,
+    isBold: Boolean = false,
+    backgroundColor: Option[Color] = None
 ) extends CellDetails {
   override def cellType: CellType = CellRow
   def empty: CellProperties = this.copy(text = "")
@@ -317,11 +325,11 @@ object PdfReport {
 }
 
 case class PdfReport(
-    pageProperties: PageProperties,
+    override val pageProperties: PageProperties,
     details: Seq[TableDetails],
-    header: Option[Header],
-    footer: Option[Footer]
-) {
+    override val header: Option[Header],
+    override val footer: Option[Footer]
+) extends GenericPdfReport {
   def isMultiTableReport: Boolean = details.size > 1
 
   def withFooter(text: String, html: Boolean = false): PdfReport =

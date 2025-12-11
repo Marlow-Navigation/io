@@ -28,8 +28,8 @@ import scala.util.{Failure, Success, Try}
 
 object PdfUtils extends Loggie {
   private val config: IOConfig = ConfigSource.default.loadOrThrow[IOConfig]
-  private val DefaultTableHeaderBgColor = new DeviceGray(config.tableHeaderBgColor)
-  private val DefaultTableRowBgColor = new DeviceGray(config.tableRowBgColor)
+  val DefaultTableHeaderBgColor = new DeviceGray(config.tableHeaderBgColor)
+  val DefaultTableRowBgColor = new DeviceGray(config.tableRowBgColor)
 
   def addCell(
       tDetails: TableDetails,
@@ -169,7 +169,7 @@ object PdfUtils extends Loggie {
       tableDetails: TableDetails,
       sumColumn: ColumnSum,
       table: Table,
-      pdfReport: PdfReport
+      pageProperties: PageProperties
   ): Unit = {
     val tableRow: TableDetails =
       tableDetails
@@ -187,9 +187,9 @@ object PdfUtils extends Loggie {
         tableRow.copy(cells = rowCells),
         table,
         (cell, sumColumn.column - 1),
-        pdfReport.pageProperties.font,
-        pdfReport.pageProperties.fontBold,
-        pdfReport.pageProperties.fontSize
+        pageProperties.font,
+        pageProperties.fontBold,
+        pageProperties.fontSize
       )
     }
   }
@@ -197,7 +197,7 @@ object PdfUtils extends Loggie {
   def addCellDetails(
       tableDetails: TableDetails,
       table: Table,
-      pdfReport: PdfReport
+      pageProperties: PageProperties
   ): Seq[ColumnSum] = {
     def cells: Seq[CellDetails] = tableDetails.columns ++ tableDetails.cells
     val tableSumColumns: Seq[ColumnSum] = cells.zipWithIndex.foldLeft(Seq[ColumnSum]()) {
@@ -206,15 +206,15 @@ object PdfUtils extends Loggie {
           tableDetails,
           table,
           cellWithIndex,
-          pdfReport.pageProperties.font,
-          pdfReport.pageProperties.fontBold,
-          pdfReport.pageProperties.fontSize
+          pageProperties.font,
+          pageProperties.fontBold,
+          pageProperties.fontSize
         ).fold(agg)(cs => agg :+ cs)
     }
     tableSumColumns
       .groupBy(_.column)
       .map { x => ColumnSum(x._1, x._2.map(_.sum).sum) }
-      .foreach { sumColumn => addSumCell(tableDetails, sumColumn, table, pdfReport) }
+      .foreach { sumColumn => addSumCell(tableDetails, sumColumn, table, pageProperties) }
     tableSumColumns
   }
 
@@ -225,17 +225,16 @@ object PdfUtils extends Loggie {
     table.setKeepWithNext(tableDetails.keepWithNext)
   }
 
-  def generate(
-      pdfReport: PdfReport
-  ): Array[Byte] = {
-    val isPortrait = pdfReport.pageProperties.orientation == Portrait
+  def withDocument(
+      genericPdf: GenericPdfReport
+  )(generatePdf: Document => Unit): Array[Byte] = {
     val outputStream = new ByteArrayOutputStream()
     val tempBAOS = new ByteArrayOutputStream()
     val pdfWriter = new PdfWriter(tempBAOS)
     val pdfDoc = new PdfDocument(pdfWriter)
     val doc = new Document(
       pdfDoc,
-      pdfReport.pageProperties.pageSizeWithOrientation,
+      genericPdf.pageProperties.pageSizeWithOrientation,
       true
     )
 
@@ -247,28 +246,10 @@ object PdfUtils extends Loggie {
         config.defaultMarginLeft
       )
 
-      pdfReport.header.foreach(h => pdfDoc.addEventHandler(PdfDocumentEvent.START_PAGE, h))
-      pdfReport.footer.foreach(f => pdfDoc.addEventHandler(PdfDocumentEvent.END_PAGE, f))
-      val totalSumColumns = pdfReport.details
-        .foldLeft(Seq[ColumnSum]()) { (agg, tableDetails) =>
-          if (tableDetails.columns.isEmpty)
-            throw new Exception("The provided table has no columns")
-          val table: Table = prepareTable(tableDetails)
-          val tableSumColumns = addCellDetails(tableDetails, table, pdfReport)
-          doc.add(table)
-          agg ++ tableSumColumns
-        }
-        .groupBy(_.column)
-        .map { sumColumns => ColumnSum(sumColumns._1, sumColumns._2.map(_.sum).sum) }
-        .toList
+      genericPdf.header.foreach(h => pdfDoc.addEventHandler(PdfDocumentEvent.START_PAGE, h))
+      genericPdf.footer.foreach(f => pdfDoc.addEventHandler(PdfDocumentEvent.END_PAGE, f))
 
-      if (pdfReport.isMultiTableReport) {
-        totalSumColumns.foreach { sumColumn =>
-          val table: Table = prepareTable(pdfReport.details.head)
-          addSumCell(pdfReport.details.head, sumColumn, table, pdfReport)
-          doc.add(table)
-        }
-      }
+      generatePdf(doc)
 
       doc.close()
       pdfDoc.close()
@@ -282,11 +263,11 @@ object PdfUtils extends Loggie {
         )
       val docFinal = new Document(
         pdfDocFinal,
-        pdfReport.pageProperties.pageSizeWithOrientation,
+        genericPdf.pageProperties.pageSizeWithOrientation,
         true
       )
-      if (pdfReport.pageProperties.pageNumbers) {
-        docFinal.setFontSize(pdfReport.pageProperties.pageNumbersFontSize)
+      if (genericPdf.pageProperties.pageNumbers) {
+        docFinal.setFontSize(genericPdf.pageProperties.pageNumbersFontSize)
         val numberOfPages = pdfDocFinal.getNumberOfPages
         for (pageNo <- 1 to numberOfPages) {
           docFinal.showTextAligned(
@@ -312,6 +293,43 @@ object PdfUtils extends Loggie {
       case Success(_) =>
         logger.info("Done")
         outputStream.toByteArray
+    }
+  }
+
+  def generate(
+      pdfReport: RichPdfReport
+  ): Array[Byte] = {
+    withDocument(pdfReport) { doc =>
+      pdfReport.details.foldLeft(doc) { (updateDoc, element) =>
+        element.add(updateDoc, pdfReport.pageProperties)
+      }
+    }
+  }
+
+  def generate(
+      pdfReport: PdfReport
+  ): Array[Byte] = {
+    withDocument(pdfReport) { doc =>
+      val totalSumColumns = pdfReport.details
+        .foldLeft(Seq[ColumnSum]()) { (agg, tableDetails) =>
+          if (tableDetails.columns.isEmpty)
+            throw new Exception("The provided table has no columns")
+          val table: Table = prepareTable(tableDetails)
+          val tableSumColumns = addCellDetails(tableDetails, table, pdfReport.pageProperties)
+          doc.add(table)
+          agg ++ tableSumColumns
+        }
+        .groupBy(_.column)
+        .map { sumColumns => ColumnSum(sumColumns._1, sumColumns._2.map(_.sum).sum) }
+        .toList
+
+      if (pdfReport.isMultiTableReport) {
+        totalSumColumns.foreach { sumColumn =>
+          val table: Table = prepareTable(pdfReport.details.head)
+          addSumCell(pdfReport.details.head, sumColumn, table, pdfReport.pageProperties)
+          doc.add(table)
+        }
+      }
     }
   }
 
