@@ -23,6 +23,13 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           token: ${{ secrets.GH_TOKEN_PUB }}
           fetch-depth: 0
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
       - name: Unit tests
         shell: bash
         run: sbt -Dsbt.log.noformat=true -v "; test;"
