@@ -130,6 +130,7 @@ class PdfUtilsSpec extends Specification {
 //    }
     "generate a pdf report from data" in {
       dump()
+
       val personList: Seq[Person] = DataGen.gen(11)
       val pdfReportPerson =
         PdfReport(Seq(personList), header.text, footer.text)
@@ -140,6 +141,8 @@ class PdfUtilsSpec extends Specification {
       println("BINARY: HEADER" + reportArrayBytes.take(200).map("%02X" format _).mkString)
       println("BINARY: MIDDLE" + reportArrayBytes.slice(2000, 2200).map("%02X" format _).mkString)
       println("BINARY: FINAL" + reportArrayBytes.takeRight(200).map("%02X" format _).mkString)
+
+      println("WHOLE:" + reportArrayBytes.map("%02X" format _).mkString + ":")
       reportArrayBytes.length mustEqual 440620
     }
 //    "generate a pdf report from data with column overrides" in {
