@@ -161,6 +161,7 @@ class PdfUtilsSpec extends Specification {
           .withCellsAlignment(TextAlignment.LEFT)
           .maxSpanForColumn(1)
 
+      println("test")
       val reportArrayBytes: Array[Byte] = PdfUtils.generate(pdfReportPerson)
       reportArrayBytes.length mustEqual 439150
     }
