@@ -32,3 +32,20 @@ jobs:
           NEXUS_USER: ${{ secrets.NEXUS_USER }}
           NEXUS_PASS: ${{ secrets.NEXUS_PASS }}
           NEXUS_REPO: ${{ secrets.NEXUS_REPO }}
+      - name: Bump version and push tag
+        id: bump_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GH_TOKEN_PUB }}
+          fetch_all_tags: true
+          default_bump: patch
+          create_annotated_tag: true
+          tag_prefix: ''
+      - name: Publish
+        shell: bash
+        run: sbt -Dsbt.log.noformat=true -v "publish"
+        env:
+          DOCKER_TAG: ${{ steps.bump_version.outputs.new_tag }}
+          NEXUS_USER: ${{ secrets.NEXUS_USER }}
+          NEXUS_PASS: ${{ secrets.NEXUS_PASS }}
+          NEXUS_REPO: ${{ secrets.NEXUS_REPO }}
