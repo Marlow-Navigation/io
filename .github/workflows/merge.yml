@@ -45,7 +45,7 @@ jobs:
         shell: bash
         run: sbt -Dsbt.log.noformat=true -v "publish"
         env:
-          DOCKER_TAG: ${{ steps.bump_version.outputs.new_tag }}
+          IO_VERSION: ${{ steps.bump_version.outputs.new_tag }}
           NEXUS_USER: ${{ secrets.NEXUS_USER }}
           NEXUS_PASS: ${{ secrets.NEXUS_PASS }}
           NEXUS_REPO: ${{ secrets.NEXUS_REPO }}
