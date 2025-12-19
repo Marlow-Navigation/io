@@ -44,6 +44,7 @@ case class PdfTable(
         }
         if (value.isBold) cell.setBold()
         value.backgroundColor.map(color => cell.setBackgroundColor(color))
+        cell.setTextAlignment(value.alignment)
         cell.setFontSize(pageProperties.fontSize)
         table.addCell(cell)
     }
